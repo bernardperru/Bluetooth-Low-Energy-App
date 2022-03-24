@@ -2,7 +2,8 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/Bluetooth-Low-Energy-App.iml" filepath="$PROJECT_DIR$/.idea/Bluetooth-Low-Energy-App.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/igen.iml" filepath="$PROJECT_DIR$/.idea/modules/igen.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/app/igen.app.iml" filepath="$PROJECT_DIR$/.idea/modules/app/igen.app.iml" />
     </modules>
   </component>
 </project>
