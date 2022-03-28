@@ -29,7 +29,7 @@ class MainActivity : AppCompatActivity() {
     private val PERMISSION_REQUEST_BACKGROUND_LOCATION = 2
     var beaconsInVicinity = mutableListOf<CBeacon>()
     val content = Content()
-    val URL = "130.225.52.157"
+    val URL = "130.225.57.152"
     lateinit var textView: TextView
 
     override fun onCreate(savedInstanceState: Bundle?) {
