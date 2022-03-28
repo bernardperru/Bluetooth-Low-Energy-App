@@ -8,30 +8,28 @@ import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.util.Log
-import android.widget.ArrayAdapter
-import android.widget.ListView
 import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.Observer
 import okhttp3.*
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.RequestBody.Companion.toRequestBody
 import org.altbeacon.beacon.Beacon
 import org.altbeacon.beacon.BeaconManager
 import org.altbeacon.beacon.BeaconParser
 import org.altbeacon.beacon.Region
 import org.altbeacon.beacon.service.BeaconService
-import java.io.IOException
+import org.json.JSONObject
 import kotlin.math.abs
-import com.example.igen.Content
-import okhttp3.RequestBody.Companion.toRequestBody
 
 
 class MainActivity : AppCompatActivity() {
     private val PERMISSION_REQUEST_FINE_LOCATION = 1
     private val PERMISSION_REQUEST_BACKGROUND_LOCATION = 2
-    val okHttpClient = OkHttpClient()
-
+    var beaconsInVicinity = mutableListOf<CBeacon>()
     val content = Content()
+    val URL = "130.225.52.157"
     lateinit var textView: TextView
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -41,13 +39,7 @@ class MainActivity : AppCompatActivity() {
 
         checkForPermissions()
 
-        val beaconManager = BeaconManager.getInstanceForApplication(this)
-        beaconManager.beaconParsers.add(BeaconParser().setBeaconLayout("s:0-1=feaa,m:2-2=00,p:3-3:-41,i:4-13,i:14-19"))
-        BeaconManager.setDebug(true)
-        val region = Region("all-beacons-region", null, null, null)
-
-        beaconManager.getRegionViewModel(region).rangedBeacons.observe(this, rangingObserver)
-        beaconManager.startRangingBeacons(region)
+        startRanging()
 
         content()
     }
@@ -55,20 +47,41 @@ class MainActivity : AppCompatActivity() {
     private val rangingObserver = Observer<Collection<Beacon>> { beacons ->
         Log.d(BeaconService.TAG, "Ranged: ${beacons.count()} beacons")
         for (beacon: Beacon in beacons) {
-            content.rssi = beacon.rssi.toDouble()
-            content.distance = beacon.distance
-            content.UUID = beacon.id2.toString()
+            beaconsInVicinity.add(CBeacon(beacon.id2.toString(), beacon.distance))
         }
-
     }
 
     private fun content() {
-        var sum = content.averageMiss * content.counter
-        content.counter++
-        content.averageMiss = (sum + abs((content.distance - content.distanceToBeacon))) / content.counter
-        var temp = "Distance based on RSSI: ${content.distance}  \n Actual distance to beacon: ${content.distanceToBeacon} \n Average miss: ${content.averageMiss}  \n Seconds: ${content.counter} \n Rssi: ${content.rssi} \n UUID: ${content.UUID}"
+        //var sum = content.averageMiss * content.counter
+        //content.counter++
+        //content.averageMiss = (sum + abs((content.distance - content.distanceToBeacon))) / content.counter
+        //var temp = "Distance based on RSSI: ${content.distance}  \n Actual distance to beacon: ${content.distanceToBeacon} \n Average miss: ${content.averageMiss}  \n Seconds: ${content.counter} \n Rssi: ${content.rssi} \n UUID: ${content.UUID}"
+        beaconsInVicinity.sortByDescending { it.distance }
+
+        if (beaconsInVicinity.count() >= 3) {
+            val mediaType = "application/json; charset=utf-8".toMediaType()
+            var jsonString = """{
+                    "id": "temp",
+                        "distances": {
+                            "${beaconsInVicinity[0].UUID}": ${beaconsInVicinity[0].distance},
+                            "${beaconsInVicinity[1].UUID}": ${beaconsInVicinity[1].distance},
+                            "${beaconsInVicinity[2].UUID}": ${beaconsInVicinity[2].distance}
+                            }
+                        }"""
+
+            val client = OkHttpClient()
+            val request = Request.Builder().url(URL).post(jsonString.toRequestBody(mediaType)).build()
+            val response = client.newCall(request).execute()
+        }
+
+        var temp = ""
+
+        for (beacon in beaconsInVicinity) {
+            temp += beacon.UUID + " " + beacon.distance + "\n"
+        }
 
         textView.text = temp
+        beaconsInVicinity.clear()
 
         refresh(1000) //Refreshes the screen to update the values displayed on screen
     }
@@ -148,5 +161,15 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         }
+    }
+
+    private fun startRanging() {
+        val beaconManager = BeaconManager.getInstanceForApplication(this)
+        beaconManager.beaconParsers.add(BeaconParser().setBeaconLayout("s:0-1=feaa,m:2-2=00,p:3-3:-41,i:4-13,i:14-19"))
+        BeaconManager.setDebug(true)
+        val region = Region("all-beacons-region", null, null, null)
+
+        beaconManager.getRegionViewModel(region).rangedBeacons.observe(this, rangingObserver)
+        beaconManager.startRangingBeacons(region)
     }
 }

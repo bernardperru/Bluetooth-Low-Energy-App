@@ -1,6 +1,6 @@
 package com.example.igen
 
-class Content {
+class Content() {
     var counter: Int = 0
     var distanceToBeacon: Int = 0
     var averageMiss: Double = 0.0
