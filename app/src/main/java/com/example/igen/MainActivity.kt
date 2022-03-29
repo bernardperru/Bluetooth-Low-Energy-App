@@ -45,7 +45,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private val rangingObserver = Observer<Collection<Beacon>> { beacons ->
-        Log.d(BeaconService.TAG, "Ranged: ${beacons.count()} beacons")
+        beaconsInVicinity.clear()
         for (beacon: Beacon in beacons) {
             beaconsInVicinity.add(CBeacon(beacon.id2.toString(), beacon.distance))
         }
@@ -56,11 +56,15 @@ class MainActivity : AppCompatActivity() {
         //content.counter++
         //content.averageMiss = (sum + abs((content.distance - content.distanceToBeacon))) / content.counter
         //var temp = "Distance based on RSSI: ${content.distance}  \n Actual distance to beacon: ${content.distanceToBeacon} \n Average miss: ${content.averageMiss}  \n Seconds: ${content.counter} \n Rssi: ${content.rssi} \n UUID: ${content.UUID}"
+
+        var temp = ""
+
         beaconsInVicinity.sortByDescending { it.distance }
 
-        if (beaconsInVicinity.count() >= 3) {
-            val mediaType = "application/json; charset=utf-8".toMediaType()
-            var jsonString = """{
+        try {
+            if (beaconsInVicinity.count() >= 3) {
+                val mediaType = "application/json; charset=utf-8".toMediaType()
+                var jsonString = """{
                     "id": "temp",
                         "distances": {
                             "${beaconsInVicinity[0].UUID}": ${beaconsInVicinity[0].distance},
@@ -69,20 +73,21 @@ class MainActivity : AppCompatActivity() {
                             }
                         }"""
 
-            val client = OkHttpClient()
-            val request = Request.Builder().url(URL).post(jsonString.toRequestBody(mediaType)).build()
-            val response = client.newCall(request).execute()
+                val client = OkHttpClient()
+                val request =
+                    Request.Builder().url(URL).post(jsonString.toRequestBody(mediaType)).build()
+                val response = client.newCall(request).execute()
+            }
         }
+        catch (e: Exception) {
 
-        var temp = ""
+        }
 
         for (beacon in beaconsInVicinity) {
             temp += beacon.UUID + " " + beacon.distance + "\n"
         }
 
         textView.text = temp
-        beaconsInVicinity.clear()
-
         refresh(1000) //Refreshes the screen to update the values displayed on screen
     }
 
