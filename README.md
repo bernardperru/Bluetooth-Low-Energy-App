@@ -1,3 +1,4 @@
 # Bluetooth-Low-Energy-App
-Niggas be crazy \n
+Homies be crazy
+
 they do be crazy @naske
