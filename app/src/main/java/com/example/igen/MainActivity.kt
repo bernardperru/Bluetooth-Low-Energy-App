@@ -7,11 +7,7 @@ import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import android.os.Handler
-<<<<<<< Updated upstream
 import android.os.StrictMode
-import android.util.Log
-=======
->>>>>>> Stashed changes
 import android.view.View
 import android.widget.Button
 import android.widget.TextView
@@ -89,16 +85,11 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
     }
 
     private fun postRequest(): String? {
-<<<<<<< Updated upstream
-        val coroutineScope = CoroutineScope(Dispatchers.Default)
-        // Disable the NetworkOnMainThreadException error
         StrictMode.setThreadPolicy(StrictMode.ThreadPolicy.Builder().detectAll().penaltyLog().build())
-=======
             try {
                 if (beaconsInVicinity.count() >= 0) {
                     val mediaType = "application/json; charset=utf-8".toMediaType()
->>>>>>> Stashed changes
-
+                    /*
                     var jsonString = """{
                     "id": "$uniqueID",
                         "distances": {
@@ -107,8 +98,8 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
                             "3": 2
                             }
                         }"""
-
-                    /*var jsonString = """{
+                    */
+                    var jsonString = """{
                     "id": "$uniqueID",
                         "distances": {
                             "${beaconsInVicinity[0].UUID}": ${beaconsInVicinity[0].distance},
@@ -116,13 +107,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
                             "${beaconsInVicinity[2].UUID}": ${beaconsInVicinity[2].distance}
                             }
                         }"""
-*/
-<<<<<<< Updated upstream
-                val client = OkHttpClient()
-                val request = Request.Builder().url(URL).post(jsonString.toRequestBody(mediaType)).build()
-                val response = client.newCall(request).execute()
-                return response.body.toString()
-=======
+
                     val client = OkHttpClient()
                     val request =
                         Request.Builder().url(URL).post(jsonString.toRequestBody(mediaType)).build()
@@ -131,7 +116,6 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
                     return response.body.toString()
                 }
             } catch (e: Exception) { return e.toString()
->>>>>>> Stashed changes
             }
         return "fuck"
     }
