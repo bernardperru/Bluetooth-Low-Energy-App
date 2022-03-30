@@ -7,18 +7,19 @@ import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import android.os.Handler
+<<<<<<< Updated upstream
 import android.os.StrictMode
 import android.util.Log
+=======
+>>>>>>> Stashed changes
 import android.view.View
 import android.widget.Button
 import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.Observer
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
+import androidx.lifecycle.ViewModel
+import kotlinx.coroutines.*
 import okhttp3.*
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody.Companion.toRequestBody
@@ -26,11 +27,8 @@ import org.altbeacon.beacon.Beacon
 import org.altbeacon.beacon.BeaconManager
 import org.altbeacon.beacon.BeaconParser
 import org.altbeacon.beacon.Region
-import org.altbeacon.beacon.service.BeaconService
-import org.json.JSONObject
-import java.io.IOException
+import java.lang.Runnable
 import java.util.*
-import kotlin.math.abs
 import kotlin.coroutines.*
 import kotlin.system.*
 
@@ -53,6 +51,8 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
 
         checkForPermissions()
 
+        startRanging()
+
         content()
     }
 
@@ -64,11 +64,16 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
         beaconsInVicinity.sortBy { it.distance }
     }
 
-    private fun content() = runBlocking {
+    private fun content() {
         //var sum = content.averageMiss * content.counter
         //content.counter++
         //content.averageMiss = (sum + abs((content.distance - content.distanceToBeacon))) / content.counter
         //var temp = "Distance based on RSSI: ${content.distance}  \n Actual distance to beacon: ${content.distanceToBeacon} \n Average miss: ${content.averageMiss}  \n Seconds: ${content.counter} \n Rssi: ${content.rssi} \n UUID: ${content.UUID}"
+
+        CoroutineScope(Dispatchers.IO).launch {
+            val response = postRequest()
+            textView.text = response
+        }
 
         refresh(1000) //Refreshes the screen to update the values displayed
     }
@@ -84,15 +89,17 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
     }
 
     private fun postRequest(): String? {
+<<<<<<< Updated upstream
         val coroutineScope = CoroutineScope(Dispatchers.Default)
         // Disable the NetworkOnMainThreadException error
         StrictMode.setThreadPolicy(StrictMode.ThreadPolicy.Builder().detectAll().penaltyLog().build())
+=======
+            try {
+                if (beaconsInVicinity.count() >= 0) {
+                    val mediaType = "application/json; charset=utf-8".toMediaType()
+>>>>>>> Stashed changes
 
-        try {
-            if (beaconsInVicinity.count() >= 0) {
-                val mediaType = "application/json; charset=utf-8".toMediaType()
-
-                var jsonString = """{
+                    var jsonString = """{
                     "id": "$uniqueID",
                         "distances": {
                             "1": 2,
@@ -101,7 +108,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
                             }
                         }"""
 
-                /*var jsonString = """{
+                    /*var jsonString = """{
                     "id": "$uniqueID",
                         "distances": {
                             "${beaconsInVicinity[0].UUID}": ${beaconsInVicinity[0].distance},
@@ -110,15 +117,23 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
                             }
                         }"""
 */
+<<<<<<< Updated upstream
                 val client = OkHttpClient()
                 val request = Request.Builder().url(URL).post(jsonString.toRequestBody(mediaType)).build()
                 val response = client.newCall(request).execute()
                 return response.body.toString()
-            }
-        }
+=======
+                    val client = OkHttpClient()
+                    val request =
+                        Request.Builder().url(URL).post(jsonString.toRequestBody(mediaType)).build()
+                    val response = client.newCall(request).execute()
 
-        catch (e: Exception) { return e.toString()}
-        return null
+                    return response.body.toString()
+                }
+            } catch (e: Exception) { return e.toString()
+>>>>>>> Stashed changes
+            }
+        return "fuck"
     }
 
     private fun refresh(milliseconds: Int) {
