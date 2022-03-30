@@ -14,6 +14,10 @@ import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.Observer
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import okhttp3.*
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody.Companion.toRequestBody
@@ -23,13 +27,11 @@ import org.altbeacon.beacon.BeaconParser
 import org.altbeacon.beacon.Region
 import org.altbeacon.beacon.service.BeaconService
 import org.json.JSONObject
+import java.io.IOException
 import java.util.*
 import kotlin.math.abs
 import kotlin.coroutines.*
 import kotlin.system.*
-
-
-
 
 class MainActivity : AppCompatActivity(), View.OnClickListener {
     private val PERMISSION_REQUEST_FINE_LOCATION = 1
@@ -37,7 +39,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
     var beaconsInVicinity = mutableListOf<CBeacon>()
     val content = Content()
     var uniqueID = UUID.randomUUID().toString()
-    val URL = "130.225.57.152"
+    val URL = "http://130.225.57.152/api/smartphone"
     lateinit var textView: TextView
     lateinit var button1: Button
 
@@ -56,26 +58,22 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
     private val rangingObserver = Observer<Collection<Beacon>> { beacons ->
         beaconsInVicinity.clear()
         for (beacon: Beacon in beacons) {
-            beaconsInVicinity.add(CBeacon(beacon.id2.toString(), beacon.distance))
+            beaconsInVicinity.add(CBeacon(beacon.id3.toUuid().toString(), beacon.distance))
         }
+        beaconsInVicinity.sortBy { it.distance }
     }
 
-    private fun content() {
+    private fun content() = runBlocking {
         //var sum = content.averageMiss * content.counter
         //content.counter++
         //content.averageMiss = (sum + abs((content.distance - content.distanceToBeacon))) / content.counter
         //var temp = "Distance based on RSSI: ${content.distance}  \n Actual distance to beacon: ${content.distanceToBeacon} \n Average miss: ${content.averageMiss}  \n Seconds: ${content.counter} \n Rssi: ${content.rssi} \n UUID: ${content.UUID}"
-
-        var response = postRequest()
-
-        textView.text = getBeaconDistances()
 
         refresh(1000) //Refreshes the screen to update the values displayed
     }
 
     private fun getBeaconDistances(): CharSequence? {
         var temp = ""
-        beaconsInVicinity.sortBy { it.distance }
 
         for (beacon in beaconsInVicinity) {
             temp += beacon.UUID + " " + beacon.distance + "\n"
@@ -84,11 +82,23 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
         return temp
     }
 
-    private fun postRequest(): String {
+    private fun postRequest(): String? {
+        val coroutineScope = CoroutineScope(Dispatchers.Default)
+
         try {
-            if (beaconsInVicinity.count() >= 3) {
+            if (beaconsInVicinity.count() >= 0) {
                 val mediaType = "application/json; charset=utf-8".toMediaType()
+
                 var jsonString = """{
+                    "id": "$uniqueID",
+                        "distances": {
+                            "1": 2,
+                            "2": 2,
+                            "3": 2
+                            }
+                        }"""
+
+                /*var jsonString = """{
                     "id": "$uniqueID",
                         "distances": {
                             "${beaconsInVicinity[0].UUID}": ${beaconsInVicinity[0].distance},
@@ -96,18 +106,16 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
                             "${beaconsInVicinity[2].UUID}": ${beaconsInVicinity[2].distance}
                             }
                         }"""
-
+*/
                 val client = OkHttpClient()
-                val request =
-                    Request.Builder().url(URL).post(jsonString.toRequestBody(mediaType)).build()
+                val request = Request.Builder().url(URL).post(jsonString.toRequestBody(mediaType)).build()
                 val response = client.newCall(request).execute()
 
-                return response.toString()
             }
         }
-        catch (e: Exception) { }
 
-        return ""
+        catch (e: Exception) { return e.toString()}
+        return null
     }
 
     private fun refresh(milliseconds: Int) {
