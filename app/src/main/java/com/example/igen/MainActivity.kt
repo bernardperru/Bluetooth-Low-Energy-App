@@ -44,11 +44,8 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-
-
         button1 = findViewById(R.id.button2)
         textView = findViewById(R.id.text_view)
-
         button1.setOnClickListener(this)
 
         checkForPermissions()
@@ -71,12 +68,12 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
 
         var response = postRequest()
 
-        textView.text = showBeaconDistances()
+        textView.text = getBeaconDistances()
 
         refresh(1000) //Refreshes the screen to update the values displayed
     }
 
-    private fun showBeaconDistances(): CharSequence? {
+    private fun getBeaconDistances(): CharSequence? {
         var temp = ""
         beaconsInVicinity.sortBy { it.distance }
 
@@ -86,7 +83,6 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
 
         return temp
     }
-
 
     private fun postRequest(): String {
         try {
