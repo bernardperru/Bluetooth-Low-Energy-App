@@ -8,6 +8,8 @@ import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.util.Log
+import android.view.View
+import android.widget.Button
 import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
@@ -21,25 +23,35 @@ import org.altbeacon.beacon.BeaconParser
 import org.altbeacon.beacon.Region
 import org.altbeacon.beacon.service.BeaconService
 import org.json.JSONObject
+import java.util.*
 import kotlin.math.abs
+import kotlin.coroutines.*
+import kotlin.system.*
 
 
-class MainActivity : AppCompatActivity() {
+
+
+class MainActivity : AppCompatActivity(), View.OnClickListener {
     private val PERMISSION_REQUEST_FINE_LOCATION = 1
     private val PERMISSION_REQUEST_BACKGROUND_LOCATION = 2
     var beaconsInVicinity = mutableListOf<CBeacon>()
     val content = Content()
+    var uniqueID = UUID.randomUUID().toString()
     val URL = "130.225.57.152"
     lateinit var textView: TextView
+    lateinit var button1: Button
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+
+
+        button1 = findViewById(R.id.button2)
         textView = findViewById(R.id.text_view)
 
-        checkForPermissions()
+        button1.setOnClickListener(this)
 
-        startRanging()
+        checkForPermissions()
 
         content()
     }
@@ -59,13 +71,17 @@ class MainActivity : AppCompatActivity() {
 
         var temp = ""
 
-        beaconsInVicinity.sortByDescending { it.distance }
+        beaconsInVicinity.sortBy { it.distance }
 
+        for (beacon in beaconsInVicinity) {
+            temp += beacon.UUID + " " + beacon.distance + "\n"
+        }
+        
         try {
             if (beaconsInVicinity.count() >= 3) {
                 val mediaType = "application/json; charset=utf-8".toMediaType()
                 var jsonString = """{
-                    "id": "temp",
+                    "id": "$uniqueID",
                         "distances": {
                             "${beaconsInVicinity[0].UUID}": ${beaconsInVicinity[0].distance},
                             "${beaconsInVicinity[1].UUID}": ${beaconsInVicinity[1].distance},
@@ -77,19 +93,16 @@ class MainActivity : AppCompatActivity() {
                 val request =
                     Request.Builder().url(URL).post(jsonString.toRequestBody(mediaType)).build()
                 val response = client.newCall(request).execute()
+
+                temp = jsonString
             }
         }
-        catch (e: Exception) {
-
-        }
-
-        for (beacon in beaconsInVicinity) {
-            temp += beacon.UUID + " " + beacon.distance + "\n"
-        }
+        catch (e: Exception) { }
 
         textView.text = temp
-        refresh(1000) //Refreshes the screen to update the values displayed on screen
+        refresh(1000) //Refreshes the screen to update the values displayed
     }
+
 
     private fun refresh(milliseconds: Int) {
 
@@ -170,11 +183,17 @@ class MainActivity : AppCompatActivity() {
 
     private fun startRanging() {
         val beaconManager = BeaconManager.getInstanceForApplication(this)
+
         beaconManager.beaconParsers.add(BeaconParser().setBeaconLayout("s:0-1=feaa,m:2-2=00,p:3-3:-41,i:4-13,i:14-19"))
         BeaconManager.setDebug(true)
         val region = Region("all-beacons-region", null, null, null)
 
         beaconManager.getRegionViewModel(region).rangedBeacons.observe(this, rangingObserver)
         beaconManager.startRangingBeacons(region)
+    }
+
+    override fun onClick(p0: View?) {
+        button1.text = "Ranging"
+        startRanging()
     }
 }
