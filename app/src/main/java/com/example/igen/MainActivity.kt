@@ -69,14 +69,26 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
         //content.averageMiss = (sum + abs((content.distance - content.distanceToBeacon))) / content.counter
         //var temp = "Distance based on RSSI: ${content.distance}  \n Actual distance to beacon: ${content.distanceToBeacon} \n Average miss: ${content.averageMiss}  \n Seconds: ${content.counter} \n Rssi: ${content.rssi} \n UUID: ${content.UUID}"
 
-        var temp = ""
+        var response = postRequest()
 
+        textView.text = showBeaconDistances()
+
+        refresh(1000) //Refreshes the screen to update the values displayed
+    }
+
+    private fun showBeaconDistances(): CharSequence? {
+        var temp = ""
         beaconsInVicinity.sortBy { it.distance }
 
         for (beacon in beaconsInVicinity) {
             temp += beacon.UUID + " " + beacon.distance + "\n"
         }
-        
+
+        return temp
+    }
+
+
+    private fun postRequest(): String {
         try {
             if (beaconsInVicinity.count() >= 3) {
                 val mediaType = "application/json; charset=utf-8".toMediaType()
@@ -94,15 +106,13 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
                     Request.Builder().url(URL).post(jsonString.toRequestBody(mediaType)).build()
                 val response = client.newCall(request).execute()
 
-                temp = jsonString
+                return response.toString()
             }
         }
         catch (e: Exception) { }
 
-        textView.text = temp
-        refresh(1000) //Refreshes the screen to update the values displayed
+        return ""
     }
-
 
     private fun refresh(milliseconds: Int) {
 
