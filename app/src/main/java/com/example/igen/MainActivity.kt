@@ -7,6 +7,7 @@ import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import android.os.Handler
+import android.os.StrictMode
 import android.util.Log
 import android.view.View
 import android.widget.Button
@@ -84,6 +85,8 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
 
     private fun postRequest(): String? {
         val coroutineScope = CoroutineScope(Dispatchers.Default)
+        // Disable the NetworkOnMainThreadException error
+        StrictMode.setThreadPolicy(StrictMode.ThreadPolicy.Builder().detectAll().penaltyLog().build())
 
         try {
             if (beaconsInVicinity.count() >= 0) {
@@ -110,7 +113,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
                 val client = OkHttpClient()
                 val request = Request.Builder().url(URL).post(jsonString.toRequestBody(mediaType)).build()
                 val response = client.newCall(request).execute()
-
+                return response.body.toString()
             }
         }
 
@@ -208,6 +211,6 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
 
     override fun onClick(p0: View?) {
         button1.text = "Ranging"
-        startRanging()
+        textView.text = postRequest()
     }
 }
