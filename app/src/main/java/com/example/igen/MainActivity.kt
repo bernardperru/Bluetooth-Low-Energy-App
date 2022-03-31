@@ -47,31 +47,37 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
 
         checkForPermissions()
 
-        startRanging()
+        //startRanging()
 
-        content()
+        initPhoneBeacon()
+
+        //content()
     }
 
     private fun initPhoneBeacon() {
-        var phoneBeacon = Beacon.Builder()
-                        .setId1("0xf7826da6bc5b71e08932e")
-                        .setId2("0x626355577474")
-                        .setId3("")
-                        .setManufacturer(0x0118).setTxPower(-12).build()
+        try {
+            var phoneBeacon = Beacon.Builder()
+                .setId1("1")
+                .setId2("2")
+                .setId3("3")
+                .setManufacturer(0x0118).setTxPower(-12).build()
 
-        var beaconParser = BeaconParser().setBeaconLayout("s:0-1=feaa,m:2-2=00,p:3-3:-41,i:4-13,i:14-19")
+            var beaconParser =
+                BeaconParser().setBeaconLayout("s:0-1=feaa,m:2-2=00,p:3-3:-41,i:4-13,i:14-19")
 
-        var beaconTransmitter = BeaconTransmitter(applicationContext, beaconParser)
+            var beaconTransmitter = BeaconTransmitter(applicationContext, beaconParser)
 
-        beaconTransmitter.startAdvertising(phoneBeacon, object : AdvertiseCallback() {
-            override fun onStartFailure(errorCode: Int) {
-                Log.e(TAG, "Advertisement start failed with code: $errorCode")
-            }
+            beaconTransmitter.startAdvertising(phoneBeacon, object : AdvertiseCallback() {
+                override fun onStartFailure(errorCode: Int) {
+                    Log.e(TAG, "Advertisement start failed with code: $errorCode")
+                }
 
-            override fun onStartSuccess(settingsInEffect: AdvertiseSettings) {
-                Log.i(TAG, "Advertisement start succeeded.")
-            }
-        })
+                override fun onStartSuccess(settingsInEffect: AdvertiseSettings) {
+                    Log.i(TAG, "Advertisement start succeeded.")
+                }
+            })
+        }
+        catch (e: java.lang.Exception) {}
     }
 
     private val rangingObserver = Observer<Collection<Beacon>> { beacons ->
