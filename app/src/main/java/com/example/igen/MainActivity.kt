@@ -2,31 +2,31 @@ package com.example.igen
 
 import android.Manifest
 import android.annotation.TargetApi
+import android.bluetooth.le.AdvertiseCallback
+import android.bluetooth.le.AdvertiseSettings
 import android.content.DialogInterface
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import android.os.Handler
-import android.os.StrictMode
+import android.util.Log
 import android.view.View
 import android.widget.Button
 import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.Observer
-import androidx.lifecycle.ViewModel
 import kotlinx.coroutines.*
 import okhttp3.*
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody.Companion.toRequestBody
-import org.altbeacon.beacon.Beacon
-import org.altbeacon.beacon.BeaconManager
-import org.altbeacon.beacon.BeaconParser
-import org.altbeacon.beacon.Region
+import org.altbeacon.beacon.*
+import org.altbeacon.beacon.service.BeaconService.TAG
 import java.lang.Runnable
 import java.util.*
 import kotlin.coroutines.*
 import kotlin.system.*
+
 
 class MainActivity : AppCompatActivity(), View.OnClickListener {
     private val PERMISSION_REQUEST_FINE_LOCATION = 1
@@ -52,10 +52,32 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
         content()
     }
 
+    private fun initPhoneBeacon() {
+        var phoneBeacon = Beacon.Builder()
+                        .setId1("0xf7826da6bc5b71e08932e")
+                        .setId2("0x626355577474")
+                        .setId3("")
+                        .setManufacturer(0x0118).setTxPower(-12).build()
+
+        var beaconParser = BeaconParser().setBeaconLayout("s:0-1=feaa,m:2-2=00,p:3-3:-41,i:4-13,i:14-19")
+
+        var beaconTransmitter = BeaconTransmitter(applicationContext, beaconParser)
+
+        beaconTransmitter.startAdvertising(phoneBeacon, object : AdvertiseCallback() {
+            override fun onStartFailure(errorCode: Int) {
+                Log.e(TAG, "Advertisement start failed with code: $errorCode")
+            }
+
+            override fun onStartSuccess(settingsInEffect: AdvertiseSettings) {
+                Log.i(TAG, "Advertisement start succeeded.")
+            }
+        })
+    }
+
     private val rangingObserver = Observer<Collection<Beacon>> { beacons ->
         beaconsInVicinity.clear()
         for (beacon: Beacon in beacons) {
-            beaconsInVicinity.add(CBeacon(beacon.id3.toUuid().toString(), beacon.distance))
+            beaconsInVicinity.add(CBeacon(beacon.id2.toString(), beacon.distance))
         }
         beaconsInVicinity.sortBy { it.distance }
     }
@@ -66,10 +88,9 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
         //content.averageMiss = (sum + abs((content.distance - content.distanceToBeacon))) / content.counter
         //var temp = "Distance based on RSSI: ${content.distance}  \n Actual distance to beacon: ${content.distanceToBeacon} \n Average miss: ${content.averageMiss}  \n Seconds: ${content.counter} \n Rssi: ${content.rssi} \n UUID: ${content.UUID}"
 
-        CoroutineScope(Dispatchers.IO).launch {
-            val response = postRequest()
-            textView.text = response
-        }
+            CoroutineScope(Dispatchers.IO).launch {
+                textView.text = postRequest()
+            }
 
         refresh(1000) //Refreshes the screen to update the values displayed
     }
@@ -85,46 +106,44 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
     }
 
     private fun postRequest(): String? {
-        StrictMode.setThreadPolicy(StrictMode.ThreadPolicy.Builder().detectAll().penaltyLog().build())
+        //StrictMode.setThreadPolicy(StrictMode.ThreadPolicy.Builder().detectAll().penaltyLog().build())
             try {
                 if (beaconsInVicinity.count() >= 0) {
                     val mediaType = "application/json; charset=utf-8".toMediaType()
-                    /*
+
                     var jsonString = """{
-                    "id": "$uniqueID",
+                    "id": "Yann",
                         "distances": {
                             "1": 2,
                             "2": 2,
                             "3": 2
                             }
                         }"""
-                    */
-                    var jsonString = """{
-                    "id": "$uniqueID",
+
+                    /*var jsonString = """{
+                    "id": "Yann",
                         "distances": {
                             "${beaconsInVicinity[0].UUID}": ${beaconsInVicinity[0].distance},
                             "${beaconsInVicinity[1].UUID}": ${beaconsInVicinity[1].distance},
                             "${beaconsInVicinity[2].UUID}": ${beaconsInVicinity[2].distance}
                             }
                         }"""
-
+                    */
                     val client = OkHttpClient()
-                    val request =
-                        Request.Builder().url(URL).post(jsonString.toRequestBody(mediaType)).build()
+                    val request = Request.Builder().url(URL).post(jsonString.toRequestBody(mediaType)).build()
                     val response = client.newCall(request).execute()
 
-                    return response.body.toString()
+                    return response.toString()
                 }
-            } catch (e: Exception) { return e.toString()
-            }
-        return "fuck"
+
+            } catch (e: Exception) { return e.toString()}
+        return "Fejl"
     }
 
     private fun refresh(milliseconds: Int) {
 
         val handler = Handler()
         val runnable = Runnable { content() }
-
         handler.postDelayed(runnable, milliseconds.toLong())
     }
 
@@ -210,6 +229,5 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
 
     override fun onClick(p0: View?) {
         button1.text = "Ranging"
-        textView.text = postRequest()
     }
 }
