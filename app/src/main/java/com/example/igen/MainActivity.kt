@@ -40,8 +40,9 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
     var position = ""
     lateinit var textView: TextView
     lateinit var textView1: TextView
-    lateinit var button1: Button
     lateinit var button: Button
+    lateinit var button1: Button
+    lateinit var button2: Button
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -49,10 +50,12 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
         setContentView(R.layout.activity_main)
         button = findViewById(R.id.button)
         button1 = findViewById(R.id.button2)
+        button2 = findViewById(R.id.button1)
         textView = findViewById(R.id.text_view)
         textView1 = findViewById(R.id.textView1)
         button.setOnClickListener(this)
         button1.setOnClickListener(this)
+        button2.setOnClickListener(this)
 
 
         checkForPermissions()
@@ -105,9 +108,9 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
         }
          */
 
-        textView.text = beaconsInVicinity.count().toString()
+        //textView.text = beaconsInVicinity.count().toString()
 
-        textView1.text = position
+        //textView1.text = position
 
         refresh(1000) //Refreshes the screen to update the values displayed
     }
@@ -141,7 +144,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
                     val request = Request.Builder().url(URL).post(jsonString.toRequestBody(mediaType)).build()
                     val response = client.newCall(request).execute()
 
-                    return response.toString()
+                    return response.body!!.string()
                 }
 
             } catch (e: Exception) { return e.toString()}
@@ -251,17 +254,18 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
 
     override fun onClick(p0: View?) {
         if (p0!!.id == R.id.button){
-            button.text = "Request sent!"
-            CoroutineScope(Dispatchers.IO).launch {
-                position = getRequest().toString()
-                button.text = "It was sent"
-            }
+            textView1.text = getBeaconDistances()
         }
         else if(p0.id == R.id.button2){
             button1.text = "Sent!"
             CoroutineScope(Dispatchers.IO).launch {
+                textView.text = postRequest()
                 button1.text = "Send distances"
         }
+        }
+        else if(p0.id == R.id.button1) {
+            initPhoneBeacon()
+            button2.text = "phone-beacon :)"
         }
     }
 
