@@ -16,18 +16,18 @@ import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.Observer
-import kotlinx.coroutines.*
-import okhttp3.*
-import okhttp3.MediaType.Companion.get
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.OkHttpClient
+import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.altbeacon.beacon.*
 import org.altbeacon.beacon.service.BeaconService.TAG
-import java.lang.Runnable
+import org.altbeacon.beacon.service.RunningAverageRssiFilter
 import java.lang.Thread.sleep
 import java.util.*
-import kotlin.coroutines.*
-import kotlin.system.*
 
 
 class MainActivity : AppCompatActivity(), View.OnClickListener {
@@ -38,6 +38,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
     var uniqueID = UUID.randomUUID().toString()
     val URL = "http://130.225.57.152/api/smartphone"
     var position = ""
+    var averageRssi = AverageRssi("0x4a70484a6267")
     lateinit var textView: TextView
     lateinit var textView1: TextView
     lateinit var button: Button
@@ -56,7 +57,6 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
         button.setOnClickListener(this)
         button1.setOnClickListener(this)
         button2.setOnClickListener(this)
-
 
         checkForPermissions()
 
@@ -91,28 +91,20 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
     private val rangingObserver = Observer<Collection<Beacon>> { beacons ->
         beaconsInVicinity.clear()
         for (beacon: Beacon in beacons) {
-            beaconsInVicinity.add(CBeacon(beacon.id2.toString(), beacon.distance))
+            var tempBeacon = CBeacon(beacon.id2.toString())
+            tempBeacon.computeDistance(beacon.runningAverageRssi)
+            beaconsInVicinity.add(tempBeacon)
         }
-        beaconsInVicinity.sortBy { it.distance }
+
     }
 
     private fun content() {
-        //var sum = content.averageMiss * content.counter
-        //content.counter++
-        //content.averageMiss = (sum + abs((content.distance - content.distanceToBeacon))) / content.counter
-        //var temp = "Distance based on RSSI: ${content.distance}  \n Actual distance to beacon: ${content.distanceToBeacon} \n Average miss: ${content.averageMiss}  \n Seconds: ${content.counter} \n Rssi: ${content.rssi} \n UUID: ${content.UUID}"
 
-        /*
-        CoroutineScope(Dispatchers.IO).launch {
-            textView.text = beaconsInVicinity.toString()
-        }
-         */
 
-        //textView.text = beaconsInVicinity.count().toString()
 
-        //textView1.text = position
+        textView.text = getBeaconDistances()
 
-        refresh(1000) //Refreshes the screen to update the values displayed
+        refresh(5000) //Refreshes the screen to update the values displayed
     }
 
     private fun getBeaconDistances(): CharSequence? {
@@ -131,6 +123,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
                 if (beaconsInVicinity.count() >= 0) {
                     val mediaType = "application/json; charset=utf-8".toMediaType()
 
+                    /*
                     var jsonString = """{
                     "id": "Yann",
                         "distances": {
@@ -139,6 +132,14 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
                             "${beaconsInVicinity[2].UUID}": ${beaconsInVicinity[2].distance}
                             }
                         }"""
+                    */
+
+                    var jsonString = """{"id": "Yann","distances": {"""
+                    var string2 = ""
+                    for (beacon in beaconsInVicinity) {
+                        string2 += """""${beacon.UUID}": ${beacon.distance},"""
+                    }
+                    jsonString += "$string2} }"
 
                     val client = OkHttpClient()
                     val request = Request.Builder().url(URL).post(jsonString.toRequestBody(mediaType)).build()
@@ -246,6 +247,8 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
 
         beaconManager.beaconParsers.add(BeaconParser().setBeaconLayout("s:0-1=feaa,m:2-2=00,p:3-3:-41,i:4-13,i:14-19"))
         BeaconManager.setDebug(true)
+        BeaconManager.setRssiFilterImplClass(RunningAverageRssiFilter::class.java)
+        RunningAverageRssiFilter.setSampleExpirationMilliseconds(5000L)
         val region = Region("all-beacons-region", null, null, null)
 
         beaconManager.getRegionViewModel(region).rangedBeacons.observe(this, rangingObserver)
