@@ -40,8 +40,10 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
     val URL = "http://130.225.57.152/api/smartphone"
     var position = ""
     var averageRssi = AverageRssi("0x4a70484a6267")
+    var rssiBaseline = 0
     lateinit var textView: TextView
     lateinit var textView1: TextView
+    lateinit var textViewEdit: TextView
     lateinit var button: Button
     lateinit var button2: Button
     lateinit var button1: Button
@@ -58,6 +60,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
         button2 = findViewById(R.id.button2)
         textView = findViewById(R.id.text_view)
         textView1 = findViewById(R.id.textView1)
+        textViewEdit = findViewById(R.id.editTextAvgRssi)
         button.setOnClickListener(this)
         button1.setOnClickListener(this)
         button2.setOnClickListener(this)
@@ -108,7 +111,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
                 beaconsInVicinityMap.put(beacon.id2.toString(), CBeacon(beacon.id2.toString()))
             }
 
-            beaconsInVicinityMap[beacon.id2.toString()]?.computeDistance(beacon.runningAverageRssi)
+            beaconsInVicinityMap[beacon.id2.toString()]?.computeDistance(beacon.runningAverageRssi, rssiBaseline)
             beaconsInVicinityMap[beacon.id2.toString()]?.missedUpdates = 0
         }
 
@@ -269,7 +272,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
 
     override fun onClick(p0: View?) {
         if (p0!!.id == R.id.button){
-            textView1.text = printBeaconInformation()
+            rssiBaseline = textViewEdit.text.toString().toInt()
         }
         else if(p0.id == R.id.button1) {
             initPhoneBeacon()

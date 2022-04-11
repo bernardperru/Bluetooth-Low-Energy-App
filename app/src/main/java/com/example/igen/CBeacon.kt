@@ -7,8 +7,8 @@ data class CBeacon (var UUID: String){
     var distance = 0.0
     var missedUpdates = 0
 
-    fun computeDistance(averageRssi: Double) {
-        distance = (10.0).pow((-54-(averageRssi))/(10 * 2))
+    fun computeDistance(averageRssi: Double, rssiBaseLine: Int) {
+        distance = (10.0).pow((rssiBaseLine-(averageRssi))/(10 * 2))
     }
 
 }
