@@ -34,20 +34,16 @@ import kotlin.collections.HashMap
 class MainActivity : AppCompatActivity(), View.OnClickListener {
     private val PERMISSION_REQUEST_FINE_LOCATION = 1
     private val PERMISSION_REQUEST_BACKGROUND_LOCATION = 2
-    var beaconsInVicinity = mutableListOf<CBeacon>()
-    val content = Content()
-    var uniqueID = UUID.randomUUID().toString()
-    val URL = "http://130.225.57.152/api/smartphone"
-    var position = ""
-    var averageRssi = AverageRssi("0x4a70484a6267")
-    var rssiBaseline = 0
+    private val URL = "http://130.225.57.152/api/smartphone"
+    private var uniqueID = UUID.randomUUID().toString()
+    private var rssiBaseline = -51
+    private var BeaconNames = HashMap<String, String>()
     lateinit var textView: TextView
     lateinit var textView1: TextView
     lateinit var textViewEdit: TextView
     lateinit var button: Button
     lateinit var button2: Button
     lateinit var button1: Button
-    var BeaconNames = HashMap<String, String>()
 
 
     var beaconsInVicinityMap = HashMap<String, CBeacon>()
@@ -74,8 +70,6 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
         checkForPermissions()
 
         startRanging()
-
-        //initPhoneBeacon()
 
         content()
     }
@@ -113,6 +107,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
 
             beaconsInVicinityMap[beacon.id2.toString()]?.computeDistance(beacon.runningAverageRssi, rssiBaseline)
             beaconsInVicinityMap[beacon.id2.toString()]?.missedUpdates = 0
+            beaconsInVicinityMap[beacon.id2.toString()]?.averageRssi = beacon.runningAverageRssi
         }
 
     }
@@ -132,7 +127,8 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
                 out += "${beacon.UUID.substring(0,6)} " +
                         "(${BeaconNames.get(beacon.UUID)}) " +
                         "- \t${String.format("%.2f",beacon.distance)} m " +
-                        "(${beacon.missedUpdates})\n"
+                        "(${beacon.missedUpdates}) " +
+                        "rssi: ${beacon.averageRssi.toInt()}\n"
             }
             else{
                 out += "${beacon.UUID} is having a problem\n"
@@ -142,17 +138,16 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
         return out
     }
 
-
     private fun postRequest(): String? {
         try {
-            var beaconDistances = HashMap<String, Double>()
+            val beaconDistances = HashMap<String, Double>()
             val mediaType = "application/json; charset=utf-8".toMediaType()
 
             for (value in beaconsInVicinityMap.values) {
                 beaconDistances[value.UUID] = value.distance
             }
 
-            var jsonString = """{
+            val jsonString = """{
             "id": "Yann",
                 "distances": ${Gson().toJson(beaconDistances)}
                 }"""
@@ -164,21 +159,6 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
             return response.body!!.string()
 
         } catch (e: Exception) { return e.toString()}
-        return "Fejl"
-    }
-
-    private fun getRequest(): String? {
-        try {
-            val client = OkHttpClient()
-            val request = Request.Builder().url("http://130.225.57.152/api/smartphone/Yann").build()
-            val response = client.newCall(request).execute()
-
-            return response.body!!.string()
-        } catch (e: Exception) {
-            e.toString()
-        }
-
-        return "Fejl"
     }
 
     private fun refresh(milliseconds: Int) {
@@ -263,7 +243,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
         beaconManager.beaconParsers.add(BeaconParser().setBeaconLayout("s:0-1=feaa,m:2-2=00,p:3-3:-41,i:4-13,i:14-19"))
         BeaconManager.setDebug(true)
         BeaconManager.setRssiFilterImplClass(RunningAverageRssiFilter::class.java)
-        RunningAverageRssiFilter.setSampleExpirationMilliseconds(20000L)
+        RunningAverageRssiFilter.setSampleExpirationMilliseconds(60000L)
         val region = Region("all-beacons-region", null, null, null)
 
         beaconManager.getRegionViewModel(region).rangedBeacons.observe(this, rangingObserver)
