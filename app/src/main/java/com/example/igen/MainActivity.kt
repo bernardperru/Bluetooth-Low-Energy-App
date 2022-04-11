@@ -16,6 +16,7 @@ import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.Observer
+import com.google.gson.Gson
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -42,10 +43,10 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
     lateinit var textView: TextView
     lateinit var textView1: TextView
     lateinit var button: Button
-    lateinit var button1: Button
     lateinit var button2: Button
+    lateinit var button1: Button
     var BeaconNames = HashMap<String, String>()
-    var BeaconRecordedDistance = HashMap<String, Double>()
+
 
     var beaconsInVicinityMap = HashMap<String, CBeacon>()
 
@@ -53,8 +54,8 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         button = findViewById(R.id.button)
-        button1 = findViewById(R.id.button2)
-        button2 = findViewById(R.id.button1)
+        button1 = findViewById(R.id.button1)
+        button2 = findViewById(R.id.button2)
         textView = findViewById(R.id.text_view)
         textView1 = findViewById(R.id.textView1)
         button.setOnClickListener(this)
@@ -65,7 +66,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
         BeaconNames.put("0x66617454794a", "SSFA")
         BeaconNames.put("0x586c48524d50", "HPD5")
         BeaconNames.put("0x476349345762", "SAFA")
-        BeaconNames.put("0x616355577474", "MNJP")
+        BeaconNames.put("0x4a70484a6267", "FUPR")
 
         checkForPermissions()
 
@@ -115,8 +116,6 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
 
     private fun content() {
 
-
-
         textView.text = printBeaconInformation()
 
         refresh(5000) //Refreshes the screen to update the values displayed
@@ -140,37 +139,28 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
         return out
     }
 
+
     private fun postRequest(): String? {
-            try {
-                if (beaconsInVicinity.count() >= 0) {
-                    val mediaType = "application/json; charset=utf-8".toMediaType()
+        try {
+            var beaconDistances = HashMap<String, Double>()
+            val mediaType = "application/json; charset=utf-8".toMediaType()
 
-                    /*
-                    var jsonString = """{
-                    "id": "Yann",
-                        "distances": {
-                            "${beaconsInVicinity[0].UUID}": ${beaconsInVicinity[0].distance},
-                            "${beaconsInVicinity[1].UUID}": ${beaconsInVicinity[1].distance},
-                            "${beaconsInVicinity[2].UUID}": ${beaconsInVicinity[2].distance}
-                            }
-                        }"""
-                    */
+            for (value in beaconsInVicinityMap.values) {
+                beaconDistances[value.UUID] = value.distance
+            }
 
-                    var jsonString = """{"id": "Yann","distances": {"""
-                    var string2 = ""
-                    for (beacon in beaconsInVicinity) {
-                        string2 += """""${beacon.UUID}": ${beacon.distance},"""
-                    }
-                    jsonString += "$string2} }"
+            var jsonString = """{
+            "id": "Yann",
+                "distances": ${Gson().toJson(beaconDistances)}
+                }"""
 
-                    val client = OkHttpClient()
-                    val request = Request.Builder().url(URL).post(jsonString.toRequestBody(mediaType)).build()
-                    val response = client.newCall(request).execute()
+            val client = OkHttpClient()
+            val request = Request.Builder().url(URL).post(jsonString.toRequestBody(mediaType)).build()
+            val response = client.newCall(request).execute()
 
-                    return response.body!!.string()
-                }
+            return response.body!!.string()
 
-            } catch (e: Exception) { return e.toString()}
+        } catch (e: Exception) { return e.toString()}
         return "Fejl"
     }
 
@@ -270,7 +260,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
         beaconManager.beaconParsers.add(BeaconParser().setBeaconLayout("s:0-1=feaa,m:2-2=00,p:3-3:-41,i:4-13,i:14-19"))
         BeaconManager.setDebug(true)
         BeaconManager.setRssiFilterImplClass(RunningAverageRssiFilter::class.java)
-        RunningAverageRssiFilter.setSampleExpirationMilliseconds(5000L)
+        RunningAverageRssiFilter.setSampleExpirationMilliseconds(20000L)
         val region = Region("all-beacons-region", null, null, null)
 
         beaconManager.getRegionViewModel(region).rangedBeacons.observe(this, rangingObserver)
@@ -281,17 +271,18 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
         if (p0!!.id == R.id.button){
             textView1.text = printBeaconInformation()
         }
-        else if(p0.id == R.id.button2){
-            button1.text = "Sent!"
-            CoroutineScope(Dispatchers.IO).launch {
-                textView.text = postRequest()
-                button1.text = "Send distances"
-        }
-        }
         else if(p0.id == R.id.button1) {
             initPhoneBeacon()
-            button2.text = "phone-beacon :)"
+            button1.text = "phone-beacon :)"
         }
+        else if(p0.id == R.id.button2){
+            button2.text = "Sent!"
+            CoroutineScope(Dispatchers.IO).launch {
+                textView1.text = postRequest()
+                button2.text = "Send distances"
+        }
+        }
+
     }
 
 }
