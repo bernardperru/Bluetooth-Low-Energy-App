@@ -26,8 +26,8 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import org.altbeacon.beacon.*
 import org.altbeacon.beacon.service.BeaconService.TAG
 import org.altbeacon.beacon.service.RunningAverageRssiFilter
-import java.lang.Thread.sleep
 import java.util.*
+import kotlin.collections.HashMap
 
 
 class MainActivity : AppCompatActivity(), View.OnClickListener {
@@ -44,7 +44,10 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
     lateinit var button: Button
     lateinit var button1: Button
     lateinit var button2: Button
+    var BeaconNames = HashMap<String, String>()
+    var BeaconRecordedDistance = HashMap<String, Double>()
 
+    var beaconsInVicinityMap = HashMap<String, CBeacon>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -57,6 +60,12 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
         button.setOnClickListener(this)
         button1.setOnClickListener(this)
         button2.setOnClickListener(this)
+
+        //Set up Beacon names
+        BeaconNames.put("0x66617454794a", "SSFA")
+        BeaconNames.put("0x586c48524d50", "HPD5")
+        BeaconNames.put("0x476349345762", "SAFA")
+        BeaconNames.put("0x616355577474", "MNJP")
 
         checkForPermissions()
 
@@ -89,11 +98,17 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
     }
 
     private val rangingObserver = Observer<Collection<Beacon>> { beacons ->
-        beaconsInVicinity.clear()
-        for (beacon: Beacon in beacons) {
-            var tempBeacon = CBeacon(beacon.id2.toString())
-            tempBeacon.computeDistance(beacon.runningAverageRssi)
-            beaconsInVicinity.add(tempBeacon)
+        for ((key, beacon) in beaconsInVicinityMap){
+            beacon.missedUpdates += 1
+        }
+
+        for (beacon: Beacon in beacons){
+            if (!beaconsInVicinityMap.containsKey(beacon.id2.toString())){
+                beaconsInVicinityMap.put(beacon.id2.toString(), CBeacon(beacon.id2.toString()))
+            }
+
+            beaconsInVicinityMap[beacon.id2.toString()]?.computeDistance(beacon.runningAverageRssi)
+            beaconsInVicinityMap[beacon.id2.toString()]?.missedUpdates = 0
         }
 
     }
@@ -102,20 +117,27 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
 
 
 
-        textView.text = getBeaconDistances()
+        textView.text = printBeaconInformation()
 
         refresh(5000) //Refreshes the screen to update the values displayed
     }
 
-    private fun getBeaconDistances(): CharSequence? {
-        var temp = ""
+    private fun printBeaconInformation(): CharSequence? {
+        var out = ""
 
-        for (beacon in beaconsInVicinity) {
-            temp += beacon.UUID + " " + beacon.distance + "\n"
-
+        for ((key, beacon) in beaconsInVicinityMap){
+            if(beacon.UUID.length > 6){
+                out += "${beacon.UUID.substring(0,6)} " +
+                        "(${BeaconNames.get(beacon.UUID)}) " +
+                        "- \t${String.format("%.2f",beacon.distance)} m " +
+                        "(${beacon.missedUpdates})\n"
+            }
+            else{
+                out += "${beacon.UUID} is having a problem\n"
+            }
         }
 
-        return temp
+        return out
     }
 
     private fun postRequest(): String? {
@@ -257,7 +279,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
 
     override fun onClick(p0: View?) {
         if (p0!!.id == R.id.button){
-            textView1.text = getBeaconDistances()
+            textView1.text = printBeaconInformation()
         }
         else if(p0.id == R.id.button2){
             button1.text = "Sent!"
@@ -271,6 +293,5 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
             button2.text = "phone-beacon :)"
         }
     }
-
 
 }
