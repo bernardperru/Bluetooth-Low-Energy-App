@@ -150,9 +150,11 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
                 beaconDistances[value.UUID] = value.distance
             }
 
+            val sortedMap = beaconDistances.toList().sortedBy { (k,v) -> v }.toMap()
+
             val jsonString = """{
             "id": "Yann",
-                "distances": ${Gson().toJson(beaconDistances)}
+                "distances": ${Gson().toJson(sortedMap)}
                 }"""
 
             val client = OkHttpClient()
