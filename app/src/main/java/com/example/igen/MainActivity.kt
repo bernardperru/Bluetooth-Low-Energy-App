@@ -34,55 +34,58 @@ import kotlin.collections.HashMap
 class MainActivity : AppCompatActivity(), View.OnClickListener {
     private val PERMISSION_REQUEST_FINE_LOCATION = 1
     private val PERMISSION_REQUEST_BACKGROUND_LOCATION = 2
-    private val URL = "http://130.225.57.152/api/smartphone"
+    private val url = "http://130.225.57.152/api/smartphone"
     private var uniqueID = UUID.randomUUID().toString()
     private var rssiBaseline = -51
-    private var BeaconNames = HashMap<String, String>()
+    private var beaconNames = HashMap<String, String>()
+    private var beaconsInVicinityMap = HashMap<String, CBeacon>()
+
     lateinit var textView: TextView
     lateinit var textView1: TextView
     lateinit var textViewEdit: TextView
     lateinit var button: Button
-    lateinit var button2: Button
     lateinit var button1: Button
-
-
-    var beaconsInVicinityMap = HashMap<String, CBeacon>()
+    lateinit var button2: Button
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+        //Assign TextView and Button variables to their corresponding xml elements
         button = findViewById(R.id.button)
         button1 = findViewById(R.id.button1)
         button2 = findViewById(R.id.button2)
         textView = findViewById(R.id.text_view)
         textView1 = findViewById(R.id.textView1)
         textViewEdit = findViewById(R.id.editTextAvgRssi)
+        //Button are linked to a click listener which is implemented in onClick()
         button.setOnClickListener(this)
         button1.setOnClickListener(this)
         button2.setOnClickListener(this)
 
         //Set up Beacon names
-        BeaconNames.put("0x66617454794a", "SSFA")
-        BeaconNames.put("0x586c48524d50", "HPD5")
-        BeaconNames.put("0x476349345762", "SAFA")
-        BeaconNames.put("0x4a70484a6267", "FUPR")
+        beaconNames.put("0x66617454794a", "SSFA")
+        beaconNames.put("0x586c48524d50", "HPD5")
+        beaconNames.put("0x476349345762", "SAFA")
+        beaconNames.put("0x4a70484a6267", "FUPR")
 
+        //Checks whether the application has the required permissions
         checkForPermissions()
 
+        //Starts looking for beacons
         startRanging()
 
         content()
     }
 
     private fun initPhoneBeacon() {
-        var phoneBeacon = Beacon.Builder()
+        val phoneBeacon = Beacon.Builder()
                         .setId1("1")
                         .setId2("2")
                         .setManufacturer(0x0118).setTxPower(-12).build()
 
-        var beaconParser = BeaconParser().setBeaconLayout("s:0-1=feaa,m:2-2=00,p:3-3:-41,i:4-13,i:14-19")
+        val beaconParser = BeaconParser().setBeaconLayout("s:0-1=feaa,m:2-2=00,p:3-3:-41,i:4-13,i:14-19")
 
-        var beaconTransmitter = BeaconTransmitter(applicationContext, beaconParser)
+        val beaconTransmitter = BeaconTransmitter(applicationContext, beaconParser)
 
         beaconTransmitter.startAdvertising(phoneBeacon, object : AdvertiseCallback() {
             override fun onStartFailure(errorCode: Int) {
@@ -102,7 +105,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
 
         for (beacon: Beacon in beacons){
             if (!beaconsInVicinityMap.containsKey(beacon.id2.toString())){
-                beaconsInVicinityMap.put(beacon.id2.toString(), CBeacon(beacon.id2.toString()))
+                beaconsInVicinityMap[beacon.id2.toString()] = CBeacon(beacon.id2.toString())
             }
 
             beaconsInVicinityMap[beacon.id2.toString()]?.computeDistance(beacon.runningAverageRssi, rssiBaseline)
@@ -125,7 +128,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
         for ((key, beacon) in beaconsInVicinityMap){
             if(beacon.UUID.length > 6){
                 out += "${beacon.UUID.substring(0,6)} " +
-                        "(${BeaconNames.get(beacon.UUID)}) " +
+                        "(${beaconNames.get(beacon.UUID)}) " +
                         "- \t${String.format("%.2f",beacon.distance)} m " +
                         "(${beacon.missedUpdates}) " +
                         "rssi: ${beacon.averageRssi.toInt()}\n"
@@ -153,7 +156,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
                 }"""
 
             val client = OkHttpClient()
-            val request = Request.Builder().url(URL).post(jsonString.toRequestBody(mediaType)).build()
+            val request = Request.Builder().url(url).post(jsonString.toRequestBody(mediaType)).build()
             val response = client.newCall(request).execute()
 
             return response.body!!.string()
@@ -251,19 +254,19 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
     }
 
     override fun onClick(p0: View?) {
-        if (p0!!.id == R.id.button){
+        if (p0!!.id == R.id.button){ //set avg button
             rssiBaseline = textViewEdit.text.toString().toInt()
         }
-        else if(p0.id == R.id.button1) {
+        else if(p0.id == R.id.button1) { //init phone-beacon button
             initPhoneBeacon()
             button1.text = "phone-beacon :)"
         }
-        else if(p0.id == R.id.button2){
+        else if(p0.id == R.id.button2){ //post request button
             button2.text = "Sent!"
             CoroutineScope(Dispatchers.IO).launch {
                 textView1.text = postRequest()
                 button2.text = "Send distances"
-        }
+            }
         }
 
     }
