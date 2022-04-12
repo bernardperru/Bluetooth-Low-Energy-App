@@ -3,7 +3,7 @@ package com.example.igen
 import kotlin.math.pow
 
 
-data class CBeacon (var UUID: String){
+data class CBeacon (val UUID: String){
     var distance = 0.0
     var missedUpdates = 0
     var averageRssi = 0.0
