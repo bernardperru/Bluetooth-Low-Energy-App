@@ -19,6 +19,7 @@ import androidx.lifecycle.Observer
 import com.google.gson.Gson
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
@@ -34,12 +35,13 @@ import kotlin.collections.HashMap
 class MainActivity : AppCompatActivity(), View.OnClickListener {
     private val PERMISSION_REQUEST_FINE_LOCATION = 1
     private val PERMISSION_REQUEST_BACKGROUND_LOCATION = 2
-    private val url = "http://130.225.57.152/api/smartphone"
+    private val urlPostDistances = "http://130.225.57.152/api/smartphone"
+    private val urlPostBeacon = "http://130.225.57.152/api/beacon"
     private var uniqueID = UUID.randomUUID().toString()
     private var rssiBaseline = -51
     private var beaconNames = HashMap<String, String>()
     private var beaconsInVicinityMap = HashMap<String, CBeacon>()
-
+    private lateinit var positions:Positions
     lateinit var textView: TextView
     lateinit var textView1: TextView
     lateinit var textViewEdit: TextView
@@ -158,7 +160,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
                 }"""
 
             val client = OkHttpClient()
-            val request = Request.Builder().url(url).post(jsonString.toRequestBody(mediaType)).build()
+            val request = Request.Builder().url(urlPostDistances).post(jsonString.toRequestBody(mediaType)).build()
             val response = client.newCall(request).execute()
 
             return response.body!!.string()
@@ -167,7 +169,6 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
     }
 
     private fun refresh(milliseconds: Int) {
-
         val handler = Handler()
         val runnable = Runnable { content() }
         handler.postDelayed(runnable, milliseconds.toLong())
@@ -255,22 +256,71 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
         beaconManager.startRangingBeacons(region)
     }
 
+    private fun postPhoneBeacon() {
+            try {
+                val mediaType = "application/json; charset=utf-8".toMediaType()
+                val jsonString = """{
+                                      "id": "12345",
+                                      "position": {
+                                        "x": ${positions.oldPosition.x},
+                                        "y": ${positions.oldPosition.y}
+                                      } 
+                                    }"""
+
+                val client = OkHttpClient()
+                val request = Request.Builder().url(urlPostBeacon).post(jsonString.toRequestBody(mediaType)).build()
+                val response = client.newCall(request).execute()
+
+                textView1.text = response.body!!.string()
+
+                putPhoneBeacon()
+            } catch (e: Exception) {}
+    }
+
+    private fun putPhoneBeacon() {
+        try {
+            Thread.sleep(60000L)
+            val mediaType = "application/json; charset=utf-8".toMediaType()
+            val jsonString = """{
+                                      "id": "12345",
+                                      "position": {
+                                        "x": ${positions.oldPosition.x},
+                                        "y": ${positions.oldPosition.y}
+                                      } 
+                                    }"""
+
+            val client = OkHttpClient()
+            val request = Request.Builder().url("$urlPostBeacon/12345").put(jsonString.toRequestBody(mediaType)).build()
+            val response = client.newCall(request).execute()
+
+            textView1.text = response.body!!.string()
+
+            putPhoneBeacon()
+        } catch (e: Exception) {}
+    }
+
     override fun onClick(p0: View?) {
         if (p0!!.id == R.id.button){ //set avg button
             rssiBaseline = textViewEdit.text.toString().toInt()
         }
         else if(p0.id == R.id.button1) { //init phone-beacon button
             initPhoneBeacon()
-            button1.text = "phone-beacon :)"
+            CoroutineScope(Dispatchers.IO).launch { postPhoneBeacon() }
+            button1.text = "Phone Beacon Running"
         }
         else if(p0.id == R.id.button2){ //post request button
             button2.text = "Sent!"
             CoroutineScope(Dispatchers.IO).launch {
-                textView1.text = postRequest()
+                var funky = postRequest()
+                positions = Gson().fromJson(funky, Positions::class.java)
+                textView1.text = positions.oldPosition.x.toString()
+                button1.text = "Init Phone Beacon"
                 button2.text = "Send distances"
             }
         }
 
     }
+
+
 
 }

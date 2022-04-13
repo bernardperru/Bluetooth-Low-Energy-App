@@ -50,7 +50,7 @@
         android:layout_width="288dp"
         android:layout_height="62dp"
         android:layout_marginTop="264dp"
-        android:text="Init phone-beacon"
+        android:text="No Positions"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.495"
