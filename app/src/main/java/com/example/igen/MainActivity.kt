@@ -41,7 +41,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
     private var rssiBaseline = -51
     private var beaconNames = HashMap<String, String>()
     private var beaconsInVicinityMap = HashMap<String, CBeacon>()
-    private lateinit var positions:Positions
+    private lateinit var positions: Positions
     lateinit var textView: TextView
     lateinit var textView1: TextView
     lateinit var textViewEdit: TextView
