@@ -83,7 +83,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
         val phoneBeacon = Beacon.Builder()
                         .setId1("1")
                         .setId2("2")
-                        .setManufacturer(0x0118).setTxPower(-12).build()
+                        .setManufacturer(0x0118).setTxPower(4).build()
 
         val beaconParser = BeaconParser().setBeaconLayout("s:0-1=feaa,m:2-2=00,p:3-3:-41,i:4-13,i:14-19")
 
@@ -273,7 +273,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
 
                 textView1.text = response.body!!.string()
 
-                putPhoneBeacon()
+                //putPhoneBeacon()
             } catch (e: Exception) {}
     }
 
@@ -311,7 +311,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
         else if(p0.id == R.id.button2){ //post request button
             button2.text = "Sent!"
             CoroutineScope(Dispatchers.IO).launch {
-                var funky = postRequest()
+                val funky = postRequest()
                 positions = Gson().fromJson(funky, Positions::class.java)
                 textView1.text = positions.oldPosition.x.toString()
                 button1.text = "Init Phone Beacon"
@@ -320,7 +320,5 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
         }
 
     }
-
-
 
 }
