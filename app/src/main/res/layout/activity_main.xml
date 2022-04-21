@@ -21,54 +21,54 @@
 
     <Button
         android:id="@+id/button2"
-        android:layout_width="288dp"
-        android:layout_height="62dp"
+        android:layout_width="152dp"
+        android:layout_height="86dp"
         android:layout_marginTop="264dp"
         android:text="Post Request"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.495"
+        app:layout_constraintEnd_toStartOf="@+id/button1"
+        app:layout_constraintHorizontal_bias="0.677"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/text_view"
-        app:layout_constraintVertical_bias="0.87" />
+        app:layout_constraintVertical_bias="0.818" />
 
     <Button
         android:id="@+id/button"
         android:layout_width="98dp"
-        android:layout_height="67dp"
+        android:layout_height="80dp"
         android:layout_marginTop="264dp"
-        android:text="Set avg"
+        android:text="Update Values"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.48"
+        app:layout_constraintHorizontal_bias="0.386"
         app:layout_constraintStart_toEndOf="@+id/editTextAvgRssi"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.537" />
+        app:layout_constraintVertical_bias="0.568" />
 
     <Button
         android:id="@+id/button1"
-        android:layout_width="288dp"
-        android:layout_height="62dp"
+        android:layout_width="152dp"
+        android:layout_height="86dp"
         android:layout_marginTop="264dp"
         android:text="No Positions"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.495"
+        app:layout_constraintHorizontal_bias="0.868"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/text_view"
-        app:layout_constraintVertical_bias="0.41" />
+        app:layout_constraintVertical_bias="0.818" />
 
     <TextView
         android:id="@+id/textView1"
-        android:layout_width="305dp"
-        android:layout_height="211dp"
-        android:text="Positional data"
+        android:layout_width="302dp"
+        android:layout_height="48dp"
+        android:text="API Response"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.497"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.48" />
+        app:layout_constraintEnd_toEndOf="@+id/text_view"
+        app:layout_constraintHorizontal_bias="0.62"
+        app:layout_constraintStart_toStartOf="@+id/text_view"
+        app:layout_constraintTop_toBottomOf="@+id/text_view"
+        app:layout_constraintVertical_bias="0.017" />
 
     <EditText
         android:id="@+id/editTextAvgRssi"
@@ -77,11 +77,37 @@
         android:layout_marginStart="52dp"
         android:ems="10"
         android:inputType="textPersonName"
-        android:text="write average RSSI"
+        android:text="baseline"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.717" />
+        app:layout_constraintVertical_bias="0.52" />
+
+    <EditText
+        android:id="@+id/editTextId"
+        android:layout_width="173dp"
+        android:layout_height="49dp"
+        android:layout_marginStart="52dp"
+        android:ems="10"
+        android:inputType="textPersonName"
+        android:text="id"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/editTextAvgRssi"
+        app:layout_constraintVertical_bias="0.109" />
+
+    <EditText
+        android:id="@+id/editTextDescription"
+        android:layout_width="173dp"
+        android:layout_height="49dp"
+        android:layout_marginStart="52dp"
+        android:ems="10"
+        android:inputType="textPersonName"
+        android:text="Description"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.755" />
 
 
 </androidx.constraintlayout.widget.ConstraintLayout>

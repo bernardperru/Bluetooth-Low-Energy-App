@@ -19,7 +19,6 @@ import androidx.lifecycle.Observer
 import com.google.gson.Gson
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
@@ -44,13 +43,15 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
     private lateinit var positions: Positions
     lateinit var textView: TextView
     lateinit var textView1: TextView
-    lateinit var textViewEdit: TextView
+    lateinit var textViewEditBaseline: TextView
+    lateinit var textViewEditDescription: TextView
+    lateinit var textViewEditId: TextView
     lateinit var button: Button
     lateinit var button1: Button
     lateinit var button2: Button
 
-    private var id2 = 8
-    private var desc = "Thomas4"
+    private var id = 0
+    private var description = ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -61,7 +62,9 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
         button2 = findViewById(R.id.button2)
         textView = findViewById(R.id.text_view)
         textView1 = findViewById(R.id.textView1)
-        textViewEdit = findViewById(R.id.editTextAvgRssi)
+        textViewEditBaseline = findViewById(R.id.editTextAvgRssi)
+        textViewEditDescription = findViewById(R.id.editTextDescription)
+        textViewEditId = findViewById(R.id.editTextId)
         //Button are linked to a click listener which is implemented in onClick()
         button.setOnClickListener(this)
         button1.setOnClickListener(this)
@@ -93,7 +96,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
     private fun initPhoneBeacon() {
         val phoneBeacon = Beacon.Builder()
                         .setId1("1")
-                        .setId2(id2.toString())
+                        .setId2(id.toString())
                         .setManufacturer(0x0118).setTxPower(4).build()
 
         val beaconParser = BeaconParser().setBeaconLayout("s:0-1=feaa,m:2-2=00,p:3-3:-41,i:4-13,i:14-19")
@@ -166,7 +169,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
             val sortedMap = beaconDistances.toList().sortedBy { (k,v) -> v }.toMap()
 
             val jsonString = """{
-            "id": "0x00000000000${id2}",
+            "id": "0x00000000000${id}",
                 "distances": ${Gson().toJson(sortedMap)}
                 }"""
 
@@ -271,8 +274,8 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
             try {
                 val mediaType = "application/json; charset=utf-8".toMediaType()
                 val jsonString = """{
-                                      "description": "${desc}",
-                                      "id": "0x00000000000${id2}",
+                                      "description": "$description",
+                                      "id": "0x00000000000${id}",
                                       "position": {
                                         "x": ${positions.oldPosition.x},
                                         "y": ${positions.oldPosition.y}
@@ -294,8 +297,8 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
             Thread.sleep(60000L)
             val mediaType = "application/json; charset=utf-8".toMediaType()
             val jsonString = """{
-                                      "description": "${desc}",
-                                      "id": "0x00000000000${id2}",
+                                      "description": "$description",
+                                      "id": "0x00000000000${id}",
                                       "position": {
                                         "x": ${positions.oldPosition.x},
                                         "y": ${positions.oldPosition.y}
@@ -303,7 +306,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
                                     }"""
 
             val client = OkHttpClient()
-            val request = Request.Builder().url("$urlPostBeacon/12345").put(jsonString.toRequestBody(mediaType)).build()
+            val request = Request.Builder().url("$urlPostBeacon/$id").put(jsonString.toRequestBody(mediaType)).build()
             val response = client.newCall(request).execute()
 
             textView1.text = response.body!!.string()
@@ -313,8 +316,10 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
     }
 
     override fun onClick(p0: View?) {
-        if (p0!!.id == R.id.button){ //set avg button
-            rssiBaseline = textViewEdit.text.toString().toInt()
+        if (p0!!.id == R.id.button){ //updateValue button
+            rssiBaseline = textViewEditBaseline.text.toString().toInt()
+            id = textViewEditId.text.toString().toInt()
+            description = textViewEditDescription.text.toString()
         }
         else if(p0.id == R.id.button1) { //init phone-beacon button
             initPhoneBeacon()
