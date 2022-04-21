@@ -32,12 +32,18 @@ import kotlin.collections.HashMap
 
 
 class MainActivity : AppCompatActivity(), View.OnClickListener {
+    private var postCheck = false
+
     private val PERMISSION_REQUEST_FINE_LOCATION = 1
     private val PERMISSION_REQUEST_BACKGROUND_LOCATION = 2
     private val urlPostDistances = "http://130.225.57.152/api/smartphone"
     private val urlPostBeacon = "http://130.225.57.152/api/beacon"
     private var uniqueID = UUID.randomUUID().toString()
     private var rssiBaseline = -51
+    private var id = 0
+    private var description = ""
+    private var xCord = ""
+    private var yCord = ""
     private var beaconNames = HashMap<String, String>()
     private var beaconsInVicinityMap = HashMap<String, CBeacon>()
     private lateinit var positions: Positions
@@ -46,12 +52,12 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
     lateinit var textViewEditBaseline: TextView
     lateinit var textViewEditDescription: TextView
     lateinit var textViewEditId: TextView
+    lateinit var textViewEditX: TextView
+    lateinit var textViewEditY: TextView
     lateinit var button: Button
     lateinit var button1: Button
     lateinit var button2: Button
 
-    private var id = 0
-    private var description = ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -65,6 +71,8 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
         textViewEditBaseline = findViewById(R.id.editTextAvgRssi)
         textViewEditDescription = findViewById(R.id.editTextDescription)
         textViewEditId = findViewById(R.id.editTextId)
+        textViewEditX = findViewById(R.id.editTextXCord)
+        textViewEditY = findViewById(R.id.editTextYCord)
         //Button are linked to a click listener which is implemented in onClick()
         button.setOnClickListener(this)
         button1.setOnClickListener(this)
@@ -263,7 +271,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
         beaconManager.beaconParsers.add(BeaconParser().setBeaconLayout("s:0-1=feaa,m:2-2=00,p:3-3:-41,i:4-13,i:14-19"))
         BeaconManager.setDebug(true)
         BeaconManager.setRssiFilterImplClass(RunningAverageRssiFilter::class.java)
-        RunningAverageRssiFilter.setSampleExpirationMilliseconds(60000L)
+        RunningAverageRssiFilter.setSampleExpirationMilliseconds(20000L)
         val region = Region("all-beacons-region", null, null, null)
 
         beaconManager.getRegionViewModel(region).rangedBeacons.observe(this, rangingObserver)
@@ -273,14 +281,29 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
     private fun postPhoneBeacon() {
             try {
                 val mediaType = "application/json; charset=utf-8".toMediaType()
-                val jsonString = """{
-                                      "description": "$description",
-                                      "id": "0x00000000000${id}",
-                                      "position": {
-                                        "x": ${positions.oldPosition.x},
-                                        "y": ${positions.oldPosition.y}
-                                      } 
-                                    }"""
+
+                var jsonString = ""
+                if (xCord != "X" && yCord != "Y") {
+                    jsonString = """{
+                                          "description": "$description",
+                                          "id": "0x00000000000${id}",
+                                          "position": {
+                                            "x": $xCord,
+                                            "y": $yCord
+                                          } 
+                                        }"""
+                }
+                else if (postCheck){
+                    jsonString = """{
+                                          "description": "$description",
+                                          "id": "0x00000000000${id}",
+                                          "position": {
+                                            "x": ${positions.oldPosition.x},
+                                            "y": ${positions.oldPosition.y}
+                                          } 
+                                        }"""
+                }
+
 
                 val client = OkHttpClient()
                 val request = Request.Builder().url(urlPostBeacon).post(jsonString.toRequestBody(mediaType)).build()
@@ -320,20 +343,28 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
             rssiBaseline = textViewEditBaseline.text.toString().toInt()
             id = textViewEditId.text.toString().toInt()
             description = textViewEditDescription.text.toString()
+            xCord = textViewEditX.text.toString()
+            yCord = textViewEditY.text.toString()
         }
         else if(p0.id == R.id.button1) { //init phone-beacon button
-            initPhoneBeacon()
-            CoroutineScope(Dispatchers.IO).launch { postPhoneBeacon() }
-            button1.text = "Phone Beacon Running"
+            if ((xCord != "" && yCord != "") || positions != null) {
+                initPhoneBeacon()
+                CoroutineScope(Dispatchers.IO).launch { postPhoneBeacon() }
+                button1.text = "Phone Beacon Running"
+            }
+            else {
+                button1.text = "No coords"
+            }
         }
         else if(p0.id == R.id.button2){ //post request button
             button2.text = "Sent!"
             CoroutineScope(Dispatchers.IO).launch {
                 val funky = postRequest()
                 positions = Gson().fromJson(funky, Positions::class.java)
-                textView1.text = positions.toString()
+                textView1.text = funky.toString()
                 button1.text = "Init Phone Beacon"
                 button2.text = "Send distances"
+                postCheck = true
             }
         }
 
