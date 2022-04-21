@@ -49,6 +49,9 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
     lateinit var button1: Button
     lateinit var button2: Button
 
+    private var id2 = 8
+    private var desc = "Thomas4"
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
@@ -69,6 +72,14 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
         beaconNames.put("0x586c48524d50", "HPD5")
         beaconNames.put("0x476349345762", "SAFA")
         beaconNames.put("0x4a70484a6267", "FUPR")
+        beaconNames.put("0x000000000001", "Yann1")
+        beaconNames.put("0x000000000002", "Yann2")
+        beaconNames.put("0x000000000003", "Esben1")
+        beaconNames.put("0x000000000005", "Thomas1")
+        beaconNames.put("0x000000000006", "Thomas2")
+        beaconNames.put("0x000000000007", "Thomas3")
+        beaconNames.put("0x000000000008", "Thomas4")
+
 
         //Checks whether the application has the required permissions
         checkForPermissions()
@@ -82,7 +93,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
     private fun initPhoneBeacon() {
         val phoneBeacon = Beacon.Builder()
                         .setId1("1")
-                        .setId2("2")
+                        .setId2(id2.toString())
                         .setManufacturer(0x0118).setTxPower(4).build()
 
         val beaconParser = BeaconParser().setBeaconLayout("s:0-1=feaa,m:2-2=00,p:3-3:-41,i:4-13,i:14-19")
@@ -155,7 +166,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
             val sortedMap = beaconDistances.toList().sortedBy { (k,v) -> v }.toMap()
 
             val jsonString = """{
-            "id": "Yann",
+            "id": "0x00000000000${id2}",
                 "distances": ${Gson().toJson(sortedMap)}
                 }"""
 
@@ -260,7 +271,8 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
             try {
                 val mediaType = "application/json; charset=utf-8".toMediaType()
                 val jsonString = """{
-                                      "id": "12345",
+                                      "description": "${desc}",
+                                      "id": "0x00000000000${id2}",
                                       "position": {
                                         "x": ${positions.oldPosition.x},
                                         "y": ${positions.oldPosition.y}
@@ -282,7 +294,8 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
             Thread.sleep(60000L)
             val mediaType = "application/json; charset=utf-8".toMediaType()
             val jsonString = """{
-                                      "id": "12345",
+                                      "description": "${desc}",
+                                      "id": "0x00000000000${id2}",
                                       "position": {
                                         "x": ${positions.oldPosition.x},
                                         "y": ${positions.oldPosition.y}
@@ -313,7 +326,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
             CoroutineScope(Dispatchers.IO).launch {
                 val funky = postRequest()
                 positions = Gson().fromJson(funky, Positions::class.java)
-                textView1.text = positions.oldPosition.x.toString()
+                textView1.text = positions.toString()
                 button1.text = "Init Phone Beacon"
                 button2.text = "Send distances"
             }
