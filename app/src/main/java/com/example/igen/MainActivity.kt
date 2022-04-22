@@ -33,20 +33,24 @@ import kotlin.collections.HashMap
 
 class MainActivity : AppCompatActivity(), View.OnClickListener {
     private var postCheck = false
-
+    private var positionCheck = false
     private val PERMISSION_REQUEST_FINE_LOCATION = 1
     private val PERMISSION_REQUEST_BACKGROUND_LOCATION = 2
     private val urlPostDistances = "http://130.225.57.152/api/smartphone"
     private val urlPostBeacon = "http://130.225.57.152/api/beacon"
     private var uniqueID = UUID.randomUUID().toString()
+
     private var rssiBaseline = -51
     private var id = 0
     private var description = ""
     private var xCord = ""
     private var yCord = ""
+    private var timer = 0
+
     private var beaconNames = HashMap<String, String>()
     private var beaconsInVicinityMap = HashMap<String, CBeacon>()
     private lateinit var positions: Positions
+
     lateinit var textView: TextView
     lateinit var textView1: TextView
     lateinit var textViewEditBaseline: TextView
@@ -54,6 +58,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
     lateinit var textViewEditId: TextView
     lateinit var textViewEditX: TextView
     lateinit var textViewEditY: TextView
+    lateinit var textViewEditTimer: TextView
     lateinit var button: Button
     lateinit var button1: Button
     lateinit var button2: Button
@@ -73,6 +78,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
         textViewEditId = findViewById(R.id.editTextId)
         textViewEditX = findViewById(R.id.editTextXCord)
         textViewEditY = findViewById(R.id.editTextYCord)
+        textViewEditTimer = findViewById(R.id.editTextTimer)
         //Button are linked to a click listener which is implemented in onClick()
         button.setOnClickListener(this)
         button1.setOnClickListener(this)
@@ -132,9 +138,10 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
                 beaconsInVicinityMap[beacon.id2.toString()] = CBeacon(beacon.id2.toString())
             }
 
-            beaconsInVicinityMap[beacon.id2.toString()]?.computeDistance(beacon.runningAverageRssi, rssiBaseline)
+            beaconsInVicinityMap[beacon.id2.toString()]?.addRssiValue(beacon.rssi)
+            beaconsInVicinityMap[beacon.id2.toString()]?.computeDistance(rssiBaseline)
             beaconsInVicinityMap[beacon.id2.toString()]?.missedUpdates = 0
-            beaconsInVicinityMap[beacon.id2.toString()]?.averageRssi = beacon.runningAverageRssi
+            //beaconsInVicinityMap[beacon.id2.toString()]?.averageRssi = beacon.runningAverageRssi
         }
 
     }
@@ -143,7 +150,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
 
         textView.text = printBeaconInformation()
 
-        refresh(5000) //Refreshes the screen to update the values displayed
+        refresh(2000) //Refreshes the screen to update the values displayed
     }
 
     private fun printBeaconInformation(): CharSequence? {
@@ -271,7 +278,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
         beaconManager.beaconParsers.add(BeaconParser().setBeaconLayout("s:0-1=feaa,m:2-2=00,p:3-3:-41,i:4-13,i:14-19"))
         BeaconManager.setDebug(true)
         BeaconManager.setRssiFilterImplClass(RunningAverageRssiFilter::class.java)
-        RunningAverageRssiFilter.setSampleExpirationMilliseconds(20000L)
+        RunningAverageRssiFilter.setSampleExpirationMilliseconds(60000L)
         val region = Region("all-beacons-region", null, null, null)
 
         beaconManager.getRegionViewModel(region).rangedBeacons.observe(this, rangingObserver)
@@ -285,23 +292,23 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
                 var jsonString = ""
                 if (xCord != "X" && yCord != "Y") {
                     jsonString = """{
-                                          "description": "$description",
-                                          "id": "0x00000000000${id}",
-                                          "position": {
-                                            "x": $xCord,
-                                            "y": $yCord
-                                          } 
-                                        }"""
+                              "description": "$description",
+                              "id": "0x00000000000${id}",
+                              "position": {
+                                "x": $xCord,
+                                "y": $yCord
+                              } 
+                            }"""
                 }
                 else if (postCheck){
                     jsonString = """{
-                                          "description": "$description",
-                                          "id": "0x00000000000${id}",
-                                          "position": {
-                                            "x": ${positions.oldPosition.x},
-                                            "y": ${positions.oldPosition.y}
-                                          } 
-                                        }"""
+                              "description": "$description",
+                              "id": "0x00000000000${id}",
+                              "position": {
+                                "x": ${positions.oldPosition.x},
+                                "y": ${positions.oldPosition.y}
+                              } 
+                            }"""
                 }
 
 
@@ -340,14 +347,23 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
 
     override fun onClick(p0: View?) {
         if (p0!!.id == R.id.button){ //updateValue button
-            rssiBaseline = textViewEditBaseline.text.toString().toInt()
-            id = textViewEditId.text.toString().toInt()
-            description = textViewEditDescription.text.toString()
+            if (textViewEditBaseline.text.toString() != "Baseline") {
+                rssiBaseline = textViewEditBaseline.text.toString().toInt()
+            }
+            if (textViewEditId.text.toString() != "Id") {
+                id = textViewEditId.text.toString().toInt()
+            }
+            if (textViewEditDescription.text.toString() != "Description") {
+                id = textViewEditId.text.toString().toInt()
+            }
             xCord = textViewEditX.text.toString()
             yCord = textViewEditY.text.toString()
+
+            timer = textViewEditTimer.text.toString().toInt()
+            updateBeaconTimers()
         }
         else if(p0.id == R.id.button1) { //init phone-beacon button
-            if ((xCord != "" && yCord != "") || positions != null) {
+            if ((xCord != "" && yCord != "") || positionCheck) {
                 initPhoneBeacon()
                 CoroutineScope(Dispatchers.IO).launch { postPhoneBeacon() }
                 button1.text = "Phone Beacon Running"
@@ -359,15 +375,22 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
         else if(p0.id == R.id.button2){ //post request button
             button2.text = "Sent!"
             CoroutineScope(Dispatchers.IO).launch {
-                val funky = postRequest()
-                positions = Gson().fromJson(funky, Positions::class.java)
-                textView1.text = funky.toString()
+                val response = postRequest()
+                positions = Gson().fromJson(response, Positions::class.java)
+                textView1.text = response.toString()
                 button1.text = "Init Phone Beacon"
                 button2.text = "Send distances"
                 postCheck = true
+                positionCheck = true
             }
         }
 
+    }
+
+    private fun updateBeaconTimers() {
+        for (beacon: CBeacon in beaconsInVicinityMap.values) {
+            beacon.timer = timer
+        }
     }
 
 }
