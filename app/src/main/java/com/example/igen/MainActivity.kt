@@ -293,7 +293,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
                 if (xCord != "X" && yCord != "Y") {
                     jsonString = """{
                               "description": "$description",
-                              "id": "0x00000000000${id}",
+                              "id": "${makeHex(id)}",
                               "position": {
                                 "x": $xCord,
                                 "y": $yCord
@@ -303,7 +303,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
                 else if (postCheck){
                     jsonString = """{
                               "description": "$description",
-                              "id": "0x00000000000${id}",
+                              "id": "${makeHex(id)}",
                               "position": {
                                 "x": ${positions.oldPosition.x},
                                 "y": ${positions.oldPosition.y}
@@ -328,7 +328,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
             val mediaType = "application/json; charset=utf-8".toMediaType()
             val jsonString = """{
                                       "description": "$description",
-                                      "id": "0x00000000000${id}",
+                                      "id": "${makeHex(id)}",
                                       "position": {
                                         "x": ${positions.oldPosition.x},
                                         "y": ${positions.oldPosition.y}
@@ -345,6 +345,16 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
         } catch (e: Exception) {}
     }
 
+    private fun deletePhoneBeacon() {
+        try {
+            val client = OkHttpClient()
+            val request = Request.Builder().url("$urlPostBeacon/${makeHex(id)}").delete().build()
+            val response = client.newCall(request).execute()
+            textView1.text = response.body!!.string()
+            //client.newCall(Request.Builder().url("$urlPostDistances/${makeHex(id)}").delete().build()).execute()
+        } catch (e: Exception) {}
+    }
+
     override fun onClick(p0: View?) {
         if (p0!!.id == R.id.button){ //updateValue button
             if (textViewEditBaseline.text.toString() != "Baseline") {
@@ -354,7 +364,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
                 id = textViewEditId.text.toString().toInt()
             }
             if (textViewEditDescription.text.toString() != "Description") {
-                id = textViewEditId.text.toString().toInt()
+                description = textViewEditDescription.text.toString()
             }
             xCord = textViewEditX.text.toString()
             yCord = textViewEditY.text.toString()
@@ -363,10 +373,14 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
             updateBeaconTimers()
         }
         else if(p0.id == R.id.button1) { //init phone-beacon button
-            if ((xCord != "" && yCord != "") || positionCheck) {
+            if (((xCord != "" && yCord != "") || positionCheck) && (button1.text.toString() != "Stop")) {
                 initPhoneBeacon()
                 CoroutineScope(Dispatchers.IO).launch { postPhoneBeacon() }
-                button1.text = "Phone Beacon Running"
+                button1.text = "Stop"
+            }
+            else if(button1.text.toString() == "Stop"){
+                CoroutineScope(Dispatchers.IO).launch { deletePhoneBeacon() }
+                button1.text = "Init Phone Beacon"
             }
             else {
                 button1.text = "No coords"
@@ -382,6 +396,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
                 button2.text = "Send distances"
                 postCheck = true
                 positionCheck = true
+
             }
         }
 
@@ -391,6 +406,19 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
         for (beacon: CBeacon in beaconsInVicinityMap.values) {
             beacon.timer = timer
         }
+    }
+
+    private fun makeHex(id: Int): String {
+
+        var idHex = "0x"
+
+        for (i in 1..(12-(id.toString().length))) {
+            idHex += "0"
+        }
+
+        idHex += id.toString()
+
+        return idHex
     }
 
 }
