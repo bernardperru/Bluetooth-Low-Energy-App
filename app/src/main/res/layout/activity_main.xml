@@ -40,10 +40,10 @@
         android:text="Update Values"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.459"
+        app:layout_constraintHorizontal_bias="0.397"
         app:layout_constraintStart_toEndOf="@+id/editTextAvgRssi"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.576" />
+        app:layout_constraintVertical_bias="0.604" />
 
     <Button
         android:id="@+id/button1"
@@ -113,27 +113,27 @@
         android:id="@+id/editTextXCord"
         android:layout_width="100dp"
         android:layout_height="61dp"
-        android:layout_marginStart="224dp"
+        android:layout_marginStart="216dp"
         android:ems="10"
         android:inputType="textPersonName"
         android:text="X"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.52" />
+        app:layout_constraintVertical_bias="0.414" />
 
     <EditText
         android:id="@+id/editTextYCord"
         android:layout_width="100dp"
         android:layout_height="61dp"
-        android:layout_marginStart="224dp"
+        android:layout_marginStart="216dp"
         android:ems="10"
         android:inputType="textPersonName"
         android:text="Y"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.611" />
+        app:layout_constraintVertical_bias="0.52" />
 
     <EditText
         android:id="@+id/editTextTimer"
@@ -147,6 +147,19 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintVertical_bias="0.414" />
+
+    <EditText
+        android:id="@+id/editTextAuto"
+        android:layout_width="100dp"
+        android:layout_height="61dp"
+        android:layout_marginStart="216dp"
+        android:ems="10"
+        android:inputType="textPersonName"
+        android:text="0"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.635" />
 
 
 </androidx.constraintlayout.widget.ConstraintLayout>

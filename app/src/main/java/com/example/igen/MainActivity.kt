@@ -36,9 +36,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
     private var positionCheck = false
     private val PERMISSION_REQUEST_FINE_LOCATION = 1
     private val PERMISSION_REQUEST_BACKGROUND_LOCATION = 2
-    private val urlPostDistances = "http://130.225.57.152/api/smartphone"
-    private val urlPostBeacon = "http://130.225.57.152/api/beacon"
-    private var uniqueID = UUID.randomUUID().toString()
+    private val api = Api()
 
     private var rssiBaseline = -51
     private var id = 0
@@ -46,6 +44,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
     private var xCord = ""
     private var yCord = ""
     private var timer = 0
+    private var autoCheck = "0"
 
     private var beaconNames = HashMap<String, String>()
     private var beaconsInVicinityMap = HashMap<String, CBeacon>()
@@ -59,6 +58,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
     lateinit var textViewEditX: TextView
     lateinit var textViewEditY: TextView
     lateinit var textViewEditTimer: TextView
+    lateinit var textViewEditAuto: TextView
     lateinit var button: Button
     lateinit var button1: Button
     lateinit var button2: Button
@@ -79,6 +79,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
         textViewEditX = findViewById(R.id.editTextXCord)
         textViewEditY = findViewById(R.id.editTextYCord)
         textViewEditTimer = findViewById(R.id.editTextTimer)
+        textViewEditAuto = findViewById(R.id.editTextAuto)
         //Button are linked to a click listener which is implemented in onClick()
         button.setOnClickListener(this)
         button1.setOnClickListener(this)
@@ -172,34 +173,15 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
         return out
     }
 
-    private fun postRequest(): String? {
-        try {
-            val beaconDistances = HashMap<String, Double>()
-            val mediaType = "application/json; charset=utf-8".toMediaType()
-
-            for (value in beaconsInVicinityMap.values) {
-                beaconDistances[value.UUID] = value.distance
-            }
-
-            val sortedMap = beaconDistances.toList().sortedBy { (k,v) -> v }.toMap()
-
-            val jsonString = """{
-            "id": "0x00000000000${id}",
-                "distances": ${Gson().toJson(sortedMap)}
-                }"""
-
-            val client = OkHttpClient()
-            val request = Request.Builder().url(urlPostDistances).post(jsonString.toRequestBody(mediaType)).build()
-            val response = client.newCall(request).execute()
-
-            return response.body!!.string()
-
-        } catch (e: Exception) { return e.toString()}
-    }
-
     private fun refresh(milliseconds: Int) {
         val handler = Handler()
         val runnable = Runnable { content() }
+        handler.postDelayed(runnable, milliseconds.toLong())
+    }
+
+    private fun refreshPostRequest(milliseconds: Int, counter: Int) {
+        val handler = Handler()
+        val runnable = Runnable { autoPostRequest(counter) }
         handler.postDelayed(runnable, milliseconds.toLong())
     }
 
@@ -285,76 +267,6 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
         beaconManager.startRangingBeacons(region)
     }
 
-    private fun postPhoneBeacon() {
-            try {
-                val mediaType = "application/json; charset=utf-8".toMediaType()
-
-                var jsonString = ""
-                if (xCord != "X" && yCord != "Y") {
-                    jsonString = """{
-                              "description": "$description",
-                              "id": "${makeHex(id)}",
-                              "position": {
-                                "x": $xCord,
-                                "y": $yCord
-                              } 
-                            }"""
-                }
-                else if (postCheck){
-                    jsonString = """{
-                              "description": "$description",
-                              "id": "${makeHex(id)}",
-                              "position": {
-                                "x": ${positions.oldPosition.x},
-                                "y": ${positions.oldPosition.y}
-                              } 
-                            }"""
-                }
-
-
-                val client = OkHttpClient()
-                val request = Request.Builder().url(urlPostBeacon).post(jsonString.toRequestBody(mediaType)).build()
-                val response = client.newCall(request).execute()
-
-                textView1.text = response.body!!.string()
-
-                //putPhoneBeacon()
-            } catch (e: Exception) {}
-    }
-
-    private fun putPhoneBeacon() {
-        try {
-            Thread.sleep(60000L)
-            val mediaType = "application/json; charset=utf-8".toMediaType()
-            val jsonString = """{
-                                      "description": "$description",
-                                      "id": "${makeHex(id)}",
-                                      "position": {
-                                        "x": ${positions.oldPosition.x},
-                                        "y": ${positions.oldPosition.y}
-                                      } 
-                                    }"""
-
-            val client = OkHttpClient()
-            val request = Request.Builder().url("$urlPostBeacon/$id").put(jsonString.toRequestBody(mediaType)).build()
-            val response = client.newCall(request).execute()
-
-            textView1.text = response.body!!.string()
-
-            putPhoneBeacon()
-        } catch (e: Exception) {}
-    }
-
-    private fun deletePhoneBeacon() {
-        try {
-            val client = OkHttpClient()
-            val request = Request.Builder().url("$urlPostBeacon/${makeHex(id)}").delete().build()
-            val response = client.newCall(request).execute()
-            textView1.text = response.body!!.string()
-            //client.newCall(Request.Builder().url("$urlPostDistances/${makeHex(id)}").delete().build()).execute()
-        } catch (e: Exception) {}
-    }
-
     override fun onClick(p0: View?) {
         if (p0!!.id == R.id.button){ //updateValue button
             if (textViewEditBaseline.text.toString() != "Baseline") {
@@ -366,20 +278,21 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
             if (textViewEditDescription.text.toString() != "Description") {
                 description = textViewEditDescription.text.toString()
             }
+
             xCord = textViewEditX.text.toString()
             yCord = textViewEditY.text.toString()
-
+            autoCheck = textViewEditAuto.text.toString()
             timer = textViewEditTimer.text.toString().toInt()
             updateBeaconTimers()
         }
         else if(p0.id == R.id.button1) { //init phone-beacon button
             if (((xCord != "" && yCord != "") || positionCheck) && (button1.text.toString() != "Stop")) {
                 initPhoneBeacon()
-                CoroutineScope(Dispatchers.IO).launch { postPhoneBeacon() }
+                CoroutineScope(Dispatchers.IO).launch { textView1.text = api.postPhoneBeacon(positions, id, description, xCord, yCord, postCheck) }
                 button1.text = "Stop"
             }
             else if(button1.text.toString() == "Stop"){
-                CoroutineScope(Dispatchers.IO).launch { deletePhoneBeacon() }
+                CoroutineScope(Dispatchers.IO).launch { api.deletePhoneBeacon(id) }
                 button1.text = "Init Phone Beacon"
             }
             else {
@@ -388,16 +301,23 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
         }
         else if(p0.id == R.id.button2){ //post request button
             button2.text = "Sent!"
-            CoroutineScope(Dispatchers.IO).launch {
-                val response = postRequest()
-                positions = Gson().fromJson(response, Positions::class.java)
-                textView1.text = response.toString()
-                button1.text = "Init Phone Beacon"
-                button2.text = "Send distances"
-                postCheck = true
-                positionCheck = true
-
+            if (autoCheck == "1") {
+                autoPostRequest(0)
+                button2.text = "auto posting"
             }
+            else {
+                CoroutineScope(Dispatchers.IO).launch {
+                    val response = api.postRequest(beaconsInVicinityMap, id)
+                    positions = Gson().fromJson(response, Positions::class.java)
+                    textView1.text = response
+                    button1.text = "Init Phone Beacon"
+                    button2.text = "Send distances"
+                    postCheck = true
+                    positionCheck = true
+
+                }
+            }
+
         }
 
     }
@@ -408,17 +328,17 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
         }
     }
 
-    private fun makeHex(id: Int): String {
-
-        var idHex = "0x"
-
-        for (i in 1..(12-(id.toString().length))) {
-            idHex += "0"
+    private fun autoPostRequest(counter: Int) {
+        var counter = counter
+        if (counter <= 50) {
+            refreshPostRequest(20000, counter++)
+            CoroutineScope(Dispatchers.IO).launch {
+                textView1.text = api.postRequestAuto(beaconsInVicinityMap, id)
+            }
+        }
+        else {
+            button2.text = "Send Distances"
         }
 
-        idHex += id.toString()
-
-        return idHex
     }
-
 }
