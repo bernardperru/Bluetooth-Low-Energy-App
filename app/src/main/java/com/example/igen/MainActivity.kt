@@ -30,7 +30,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
     private val PERMISSION_REQUEST_FINE_LOCATION = 1
     private val PERMISSION_REQUEST_BACKGROUND_LOCATION = 2
     private val api = Api()
-    private var instanceVariables = InstanceVariables(-51, 0, "", "", "", 0, false, false, false)
+    private var instanceVariables = InstanceVariables()
 
     lateinit var textView: TextView
     lateinit var textView1: TextView
