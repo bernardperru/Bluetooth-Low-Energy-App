@@ -10,7 +10,7 @@ data class CBeacon (val UUID: String){
     var missedUpdates = 0
     var averageRssi = 0.0
     var queue: Queue<Int> = LinkedList<Int>()
-    var timer = 60
+    var timer = 20
 
     fun computeDistance(rssiBaseLine: Int) {
         computeAverageRSSI()
@@ -30,7 +30,7 @@ data class CBeacon (val UUID: String){
         }
     }
 
-    fun removeExcessValues() {
+    private fun removeExcessValues() {
         while (queue.size > timer) {
             queue.remove()
         }

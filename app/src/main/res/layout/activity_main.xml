@@ -142,7 +142,7 @@
         android:layout_marginStart="52dp"
         android:ems="10"
         android:inputType="textPersonName"
-        android:text="60"
+        android:text="20"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"

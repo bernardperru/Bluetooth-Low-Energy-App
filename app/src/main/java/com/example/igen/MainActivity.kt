@@ -20,35 +20,17 @@ import com.google.gson.Gson
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import okhttp3.MediaType.Companion.toMediaType
-import okhttp3.OkHttpClient
-import okhttp3.Request
-import okhttp3.RequestBody.Companion.toRequestBody
 import org.altbeacon.beacon.*
 import org.altbeacon.beacon.service.BeaconService.TAG
 import org.altbeacon.beacon.service.RunningAverageRssiFilter
-import java.util.*
 import kotlin.collections.HashMap
 
 
 class MainActivity : AppCompatActivity(), View.OnClickListener {
-    private var postCheck = false
-    private var positionCheck = false
     private val PERMISSION_REQUEST_FINE_LOCATION = 1
     private val PERMISSION_REQUEST_BACKGROUND_LOCATION = 2
     private val api = Api()
-
-    private var rssiBaseline = -51
-    private var id = 0
-    private var description = ""
-    private var xCord = ""
-    private var yCord = ""
-    private var timer = 0
-    private var autoCheck = "0"
-
-    private var beaconNames = HashMap<String, String>()
-    private var beaconsInVicinityMap = HashMap<String, CBeacon>()
-    private lateinit var positions: Positions
+    private var instanceVariables = InstanceVariables(-51, 0, "", "", "", 0, false, false, false)
 
     lateinit var textView: TextView
     lateinit var textView1: TextView
@@ -85,21 +67,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
         button1.setOnClickListener(this)
         button2.setOnClickListener(this)
 
-        //Set up Beacon names
-        beaconNames.put("0x66617454794a", "SSFA")
-        beaconNames.put("0x586c48524d50", "HPD5")
-        beaconNames.put("0x476349345762", "SAFA")
-        beaconNames.put("0x4a70484a6267", "FUPR")
-        beaconNames.put("0x000000000001", "Yann1")
-        beaconNames.put("0x000000000002", "Yann2")
-        beaconNames.put("0x000000000003", "Esben1")
-        beaconNames.put("0x000000000005", "Thomas1")
-        beaconNames.put("0x000000000006", "Thomas2")
-        beaconNames.put("0x000000000007", "Thomas3")
-        beaconNames.put("0x000000000008", "Thomas4")
-
-
-        //Checks whether the application has the required permissions
+       //Checks whether the application has the required permissions
         checkForPermissions()
 
         //Starts looking for beacons
@@ -111,7 +79,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
     private fun initPhoneBeacon() {
         val phoneBeacon = Beacon.Builder()
                         .setId1("1")
-                        .setId2(id.toString())
+                        .setId2(instanceVariables.id.toString())
                         .setManufacturer(0x0118).setTxPower(4).build()
 
         val beaconParser = BeaconParser().setBeaconLayout("s:0-1=feaa,m:2-2=00,p:3-3:-41,i:4-13,i:14-19")
@@ -130,19 +98,18 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
     }
 
     private val rangingObserver = Observer<Collection<Beacon>> { beacons ->
-        for ((key, beacon) in beaconsInVicinityMap){
+        for ((key, beacon) in instanceVariables.beaconsInVicinityMap){
             beacon.missedUpdates += 1
         }
 
         for (beacon: Beacon in beacons){
-            if (!beaconsInVicinityMap.containsKey(beacon.id2.toString())){
-                beaconsInVicinityMap[beacon.id2.toString()] = CBeacon(beacon.id2.toString())
+            if (!instanceVariables.beaconsInVicinityMap.containsKey(beacon.id2.toString())){
+                instanceVariables.beaconsInVicinityMap[beacon.id2.toString()] = CBeacon(beacon.id2.toString())
             }
 
-            beaconsInVicinityMap[beacon.id2.toString()]?.addRssiValue(beacon.rssi)
-            beaconsInVicinityMap[beacon.id2.toString()]?.computeDistance(rssiBaseline)
-            beaconsInVicinityMap[beacon.id2.toString()]?.missedUpdates = 0
-            //beaconsInVicinityMap[beacon.id2.toString()]?.averageRssi = beacon.runningAverageRssi
+            instanceVariables.beaconsInVicinityMap[beacon.id2.toString()]?.addRssiValue(beacon.rssi)
+            instanceVariables.beaconsInVicinityMap[beacon.id2.toString()]?.computeDistance(instanceVariables.rssiBaseline)
+            instanceVariables.beaconsInVicinityMap[beacon.id2.toString()]?.missedUpdates = 0
         }
 
     }
@@ -157,10 +124,10 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
     private fun printBeaconInformation(): CharSequence? {
         var out = ""
 
-        for ((key, beacon) in beaconsInVicinityMap){
+        for ((key, beacon) in instanceVariables.beaconsInVicinityMap){
             if(beacon.UUID.length > 6){
                 out += "${beacon.UUID.substring(0,6)} " +
-                        "(${beaconNames.get(beacon.UUID)}) " +
+                        "(${instanceVariables.beaconNames.get(beacon.UUID)}) " +
                         "- \t${String.format("%.2f",beacon.distance)} m " +
                         "(${beacon.missedUpdates}) " +
                         "rssi: ${beacon.averageRssi.toInt()}\n"
@@ -268,76 +235,86 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
     }
 
     override fun onClick(p0: View?) {
-        if (p0!!.id == R.id.button){ //updateValue button
-            if (textViewEditBaseline.text.toString() != "Baseline") {
-                rssiBaseline = textViewEditBaseline.text.toString().toInt()
-            }
-            if (textViewEditId.text.toString() != "Id") {
-                id = textViewEditId.text.toString().toInt()
-            }
-            if (textViewEditDescription.text.toString() != "Description") {
-                description = textViewEditDescription.text.toString()
-            }
-
-            xCord = textViewEditX.text.toString()
-            yCord = textViewEditY.text.toString()
-            autoCheck = textViewEditAuto.text.toString()
-            timer = textViewEditTimer.text.toString().toInt()
-            updateBeaconTimers()
-        }
-        else if(p0.id == R.id.button1) { //init phone-beacon button
-            if (((xCord != "" && yCord != "") || positionCheck) && (button1.text.toString() != "Stop")) {
-                initPhoneBeacon()
-                CoroutineScope(Dispatchers.IO).launch { textView1.text = api.postPhoneBeacon(positions, id, description, xCord, yCord, postCheck) }
-                button1.text = "Stop"
-            }
-            else if(button1.text.toString() == "Stop"){
-                CoroutineScope(Dispatchers.IO).launch { api.deletePhoneBeacon(id) }
-                button1.text = "Init Phone Beacon"
-            }
-            else {
-                button1.text = "No coords"
-            }
-        }
-        else if(p0.id == R.id.button2){ //post request button
-            button2.text = "Sent!"
-            if (autoCheck == "1") {
-                autoPostRequest(0)
-                button2.text = "auto posting"
-            }
-            else {
-                CoroutineScope(Dispatchers.IO).launch {
-                    val response = api.postRequest(beaconsInVicinityMap, id)
-                    positions = Gson().fromJson(response, Positions::class.java)
-                    textView1.text = response
-                    button1.text = "Init Phone Beacon"
-                    button2.text = "Send distances"
-                    postCheck = true
-                    positionCheck = true
-
+        try {
+            if (p0!!.id == R.id.button) { //updateValue button
+                if (textViewEditBaseline.text.toString() != "Baseline") {
+                    instanceVariables.rssiBaseline = textViewEditBaseline.text.toString().toInt()
                 }
+                if (textViewEditId.text.toString() != "Id") {
+                    instanceVariables.id = textViewEditId.text.toString().toInt()
+                }
+                if (textViewEditDescription.text.toString() != "Description") {
+                    instanceVariables.description = textViewEditDescription.text.toString()
+                }
+                if (textViewEditAuto.text.toString() == "1") {
+                    instanceVariables.autoCheck = true
+                }
+
+                instanceVariables.xCord = textViewEditX.text.toString()
+                instanceVariables.yCord = textViewEditY.text.toString()
+                instanceVariables.timer = textViewEditTimer.text.toString().toInt()
+
+                updateBeaconTimers()
+            } else if (p0.id == R.id.button1) { //init phone-beacon button
+                if ((instanceVariables.xCord != "" && instanceVariables.yCord != "") || instanceVariables.positionCheck) {
+                    initPhoneBeacon()
+                    CoroutineScope(Dispatchers.IO).launch {
+                        textView1.text = api.postPhoneBeacon(
+                            instanceVariables.positions,
+                            instanceVariables.id,
+                            instanceVariables.description,
+                            instanceVariables.xCord,
+                            instanceVariables.yCord,
+                            instanceVariables.postCheck
+                        )
+                    }
+                    button1.text = "Running"
+                } else {
+                    button1.text = "No coords"
+                }
+            } else if (p0.id == R.id.button2) { //post request button
+                if (instanceVariables.autoCheck) {
+                    autoPostRequest(0)
+                    button2.text = "auto posting"
+                    instanceVariables.autoCheck = false
+                } else {
+                    CoroutineScope(Dispatchers.IO).launch {
+                        val response = api.postRequest(
+                            instanceVariables.beaconsInVicinityMap,
+                            instanceVariables.id
+                        )
+                        instanceVariables.positions =
+                            Gson().fromJson(response, Positions::class.java)
+                        textView1.text = response
+                        button1.text = "Init Phone Beacon"
+                        button2.text = "Send distances"
+                        //instanceVariables.postCheck = true
+                        instanceVariables.positionCheck = true
+
+                    }
+                }
+
             }
-
-        }
-
+        }    catch (e: Exception) { }
     }
 
     private fun updateBeaconTimers() {
-        for (beacon: CBeacon in beaconsInVicinityMap.values) {
-            beacon.timer = timer
+        for (beacon: CBeacon in instanceVariables.beaconsInVicinityMap.values) {
+            beacon.timer = instanceVariables.timer
         }
     }
 
     private fun autoPostRequest(counter: Int) {
-        var counter = counter
-        if (counter <= 50) {
-            refreshPostRequest(20000, counter++)
+        var c = counter
+        if (c < 50) {
             CoroutineScope(Dispatchers.IO).launch {
-                textView1.text = api.postRequestAuto(beaconsInVicinityMap, id)
+                textView1.text = api.postRequestAuto(instanceVariables.beaconsInVicinityMap, instanceVariables.id)
             }
+            c += 1
+            refreshPostRequest(20000, c)
         }
         else {
-            button2.text = "Send Distances"
+            button2.text = "Done"
         }
 
     }
