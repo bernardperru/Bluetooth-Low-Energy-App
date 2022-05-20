@@ -4,7 +4,7 @@ import java.util.*
 import kotlin.math.pow
 import kotlin.math.*
 
-
+//Beacon class
 data class CBeacon (val UUID: String){
     var distance = 0.0
     var missedUpdates = 0
@@ -17,6 +17,7 @@ data class CBeacon (val UUID: String){
         distance = (10.0).pow((rssiBaseLine-(averageRssi))/(10 * 2))
     }
 
+    //Add rssi value to the queue, and removes one or more values if necessary
     fun addRssiValue(rssi: Int) {
         if (queue.size == timer) {
             queue.remove()
@@ -30,12 +31,14 @@ data class CBeacon (val UUID: String){
         }
     }
 
+    //If the queue size is changed and there are too many values in the queue they are removed
     private fun removeExcessValues() {
         while (queue.size > timer) {
             queue.remove()
         }
     }
 
+    //Removes outliers and computes average rssi
     private fun computeAverageRSSI() {
         val rssiValuesCut = removeOutliers()
         var sum = 0.0
@@ -46,6 +49,7 @@ data class CBeacon (val UUID: String){
         averageRssi = sum/queue.size
     }
 
+    //Removes top and bottom 10% of measurements
     private fun removeOutliers(): MutableList<Int> {
         val temp = queue.toList().sortedBy { v -> v }
         val startIndex = floor(temp.size * 0.1).toInt()

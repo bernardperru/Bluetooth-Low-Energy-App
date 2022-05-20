@@ -1,5 +1,6 @@
 package com.example.igen
 
+//just a place to keep track of the variables so they don't crowd MainActivity
 class InstanceVariables()
 {
     var rssiBaseline: Int = -51

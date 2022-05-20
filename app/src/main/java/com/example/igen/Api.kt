@@ -11,6 +11,7 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 
+//Class for API requests
 class Api {
     private val client = OkHttpClient()
     private val mediaType = "application/json; charset=utf-8".toMediaType()
@@ -18,7 +19,7 @@ class Api {
     private val urlPostBeacon = "http://130.225.57.152/api/beacon"
     private val urlPostAuto = "http://130.225.57.152/api/data"
 
-
+    // Sends POST request
     fun postRequest(beaconsInVicinityMap: HashMap<String, CBeacon>, id: Int): String {
         try {
             val beaconDistances = HashMap<String, Double>()
@@ -42,6 +43,7 @@ class Api {
         } catch (e: Exception) { return e.toString()}
     }
 
+    // same as the function above...
     fun postRequestAuto(beaconsInVicinityMap: HashMap<String, CBeacon>, id: Int): String {
         try {
             val beaconDistances = HashMap<String, Double>()
@@ -65,6 +67,7 @@ class Api {
         } catch (e: Exception) { return e.toString()}
     }
 
+    //Adds the phone beacon to the API
     fun postPhoneBeacon(positions: Positions, id: Int, description: String, xCord: String, yCord: String, postCheck: Boolean): String {
         try {
             var jsonString = ""
@@ -83,8 +86,8 @@ class Api {
                               "description": "$description",
                               "id": "${makeHex(id)}",
                               "position": {
-                                "x": ${positions.oldPosition.x},
-                                "y": ${positions.oldPosition.y}
+                                "x": ${positions.position.x},
+                                "y": ${positions.position.y}
                               } 
                             }"""
             }
@@ -98,16 +101,16 @@ class Api {
         return "error"
     }
 
+    //For deleting phone beacons from the API after they are done being used
     fun deletePhoneBeacon(id: Int) {
         try {
             val request = Request.Builder().url("$urlPostBeacon/${makeHex(id)}").delete().build()
             client.newCall(request).execute()
-            //client.newCall(Request.Builder().url("$urlPostDistances/${makeHex(id)}").delete().build()).execute()
         } catch (e: Exception) {}
     }
 
+    //All beacon id's are in hex, so we follow that standard
     private fun makeHex(id: Int): String {
-
         var idHex = "0x"
 
         for (i in 1..(12-(id.toString().length))) {

@@ -97,6 +97,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
         })
     }
 
+    //rangingObserver was defined by Android Beacon Library, the contents have been changed to update the values of beacons in the vicinity
     private val rangingObserver = Observer<Collection<Beacon>> { beacons ->
         for ((key, beacon) in instanceVariables.beaconsInVicinityMap){
             beacon.missedUpdates += 1
@@ -115,12 +116,12 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
     }
 
     private fun content() {
-
         textView.text = printBeaconInformation()
 
         refresh(2000) //Refreshes the screen to update the values displayed
     }
 
+    //Writes out beacon information in the topmost text field
     private fun printBeaconInformation(): CharSequence? {
         var out = ""
 
@@ -140,18 +141,20 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
         return out
     }
 
+    //Refreshes the values in the topmost text field
     private fun refresh(milliseconds: Int) {
         val handler = Handler()
         val runnable = Runnable { content() }
         handler.postDelayed(runnable, milliseconds.toLong())
     }
 
+    //Refreshes the values in the postrequest field, and calls autoPostRequest
     private fun refreshPostRequest(milliseconds: Int, counter: Int) {
         val handler = Handler()
         val runnable = Runnable { autoPostRequest(counter) }
         handler.postDelayed(runnable, milliseconds.toLong())
     }
-
+    //Android Beacon Library code for phone permissions
     private fun checkForPermissions() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             if (this.checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION)
@@ -221,6 +224,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
         }
     }
 
+    //Android Beacon Library code, which "ranges" for beacons
     private fun startRanging() {
         val beaconManager = BeaconManager.getInstanceForApplication(this)
 
@@ -233,6 +237,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
         beaconManager.getRegionViewModel(region).rangedBeacons.observe(this, rangingObserver)
         beaconManager.startRangingBeacons(region)
     }
+
 
     override fun onClick(p0: View?) {
         try {
@@ -288,7 +293,6 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
                         textView1.text = response
                         button1.text = "Init Phone Beacon"
                         button2.text = "Send distances"
-                        //instanceVariables.postCheck = true
                         instanceVariables.positionCheck = true
 
                     }
@@ -298,12 +302,14 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
         }    catch (e: Exception) { }
     }
 
+    //timer refers to the amount of measurements that are used for the averageRSSI, this can be updated in the app
     private fun updateBeaconTimers() {
         for (beacon: CBeacon in instanceVariables.beaconsInVicinityMap.values) {
             beacon.timer = instanceVariables.timer
         }
     }
 
+    //Is called 50 times and sends a post request every 20 seconds, calls refreshPostRequest, which calls the function again (normal recursion doesn't work)
     private fun autoPostRequest(counter: Int) {
         var c = counter
         if (c < 50) {
