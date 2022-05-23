@@ -1,4 +1,2 @@
 # Bluetooth-Low-Energy-App
-Homies be crazy
-
-they do be crazy @naske
+If you want to use the app download Android Studio and open the project -> Install the app via. wifi or cable.
